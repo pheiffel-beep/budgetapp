@@ -9,14 +9,15 @@ import * as historique from './ecrans/historique.js';
 import * as budgets from './ecrans/budgets.js';
 import * as reglages from './ecrans/reglages.js';
 import * as recurrents from './ecrans/recurrents.js';
+import * as repartition from './ecrans/repartition.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.5 — accueil et budgets';
+export const VERSION = '0.6 — répartition et rappel';
 
-const ECRANS = { accueil, historique, budgets, reglages, recurrents };
+const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition };
 // Sous-écrans : quel onglet reste allumé
-const ONGLET_PARENT = { recurrents: 'reglages' };
+const ONGLET_PARENT = { recurrents: 'reglages', repartition: 'accueil' };
 let ongletActuel = 'accueil';
 
 // ---------- Thème ----------

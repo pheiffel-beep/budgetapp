@@ -12,6 +12,7 @@
 
 import { echeances } from './recurrents.js';
 import { ajouterJours, ecartJours } from './dates.js';
+import { isoLocal } from './format.js';
 
 const dans = (iso, per) => iso >= per.debut && iso <= per.fin;
 
@@ -122,4 +123,45 @@ export function soldeAttendu(ref, ops, auj, comptePrincipal) {
     else if (o.type === 'virement') s += o.sens_virement === 'depuis_epargne' ? o.montant_centimes : -o.montant_centimes;
   }
   return s;
+}
+
+// ---------- Répartition par catégorie ----------
+/**
+ * Dernier jour de la période précédente à comparer.
+ * Période en cours : même nombre de jours écoulés (comparaison « à la même date »).
+ * Période terminée : la période précédente entière.
+ */
+export function coupurePrecedente(per, prec, auj) {
+  if (auj >= per.debut && auj <= per.fin) {
+    const meme = ajouterJours(prec.debut, ecartJours(per.debut, auj));
+    return meme < prec.fin ? meme : prec.fin;
+  }
+  return prec.fin;
+}
+
+/** Fusionne deux répartitions { id: centimes } : [{ id, montant, prec, ecart }], plus gros d'abord */
+export function comparerCategories(cur, prec) {
+  const ids = new Set([...Object.keys(cur), ...Object.keys(prec)]);
+  return [...ids]
+    .map(id => ({ id, montant: cur[id] || 0, prec: prec[id] || 0, ecart: (cur[id] || 0) - (prec[id] || 0) }))
+    .sort((a, b) => b.montant - a.montant || b.prec - a.prec);
+}
+
+export const sommeDepenses = (parCat) => Object.values(parCat).reduce((s, m) => s + m, 0);
+
+// ---------- Rappel de saisie ----------
+/**
+ * Nombre de jours depuis la dernière saisie faite à la main.
+ * Comptent : les opérations NON générées (création locale), le premier jour d'utilisation,
+ * et le jour où l'utilisateur a indiqué « rien à noter ».
+ */
+export function joursSansSaisie(ops, auj, debutUtilisation, confirmee) {
+  let dernier = debutUtilisation || auj;
+  if (confirmee && confirmee > dernier) dernier = confirmee;
+  for (const o of ops) {
+    if (o.recurrent_id != null || !o.cree_le) continue;
+    const jour = isoLocal(new Date(o.cree_le));
+    if (jour > dernier) dernier = jour;
+  }
+  return Math.max(0, ecartJours(dernier, auj));
 }

@@ -3,14 +3,18 @@
 
 import { db } from '../db.js';
 import { euros, eurosArrondis, aujourdhui, jjmm } from '../format.js';
-import { esc, pastille } from '../ui.js';
+import { esc, pastille, icones } from '../ui.js';
 import { periodeContenant, libelleDates } from '../dates.js';
 import { categoriesParId, triRecent } from '../operations.js';
 import { htmlLigne, activerGestes } from '../ligne-operation.js';
 import { rappelNecessaire, reporterRappel } from '../sauvegarde.js';
-import { resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances } from '../calculs.js';
+import { resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances, joursSansSaisie } from '../calculs.js';
 import { budgetsParCategorie, htmlBarre } from '../budgets.js';
 import { ouvrirRecalage } from '../recalage.js';
+import { ouvrirSaisie } from '../saisie.js';
+
+const JOURS_RAPPEL_SAISIE = 3;
+const redessiner = el => afficher(el).then(icones);
 
 export async function afficher(el) {
   const auj = aujourdhui();
@@ -22,6 +26,8 @@ export async function afficher(el) {
   const budgets = await budgetsParCategorie();
   const rappel = await rappelNecessaire();
   const ref = await db.parametre('recalage_ref', null);
+  const sansSaisie = joursSansSaisie(toutes, auj,
+    await db.parametre('date_premiere_utilisation', null), await db.parametre('saisie_confirmee', null));
 
   const calc = resteADepenser(toutes, recs, auj, per);
   const dernieres = [...toutes].sort(triRecent).slice(0, 5);
@@ -40,6 +46,19 @@ export async function afficher(el) {
 
   el.innerHTML = `
     <h1>Accueil</h1>
+
+    ${sansSaisie >= JOURS_RAPPEL_SAISIE ? `
+    <section class="carte bandeau-saisie" role="status">
+      <i data-lucide="notebook-pen"></i>
+      <div>
+        <strong>Rien encodé depuis ${sansSaisie} jours</strong>
+        <p class="muet petit">Des dépenses à noter ? Courses, essence, un café…</p>
+        <div class="rappel-actions">
+          <button type="button" class="btn btn-principal" id="a-noter">Ajouter</button>
+          <button type="button" class="btn" id="a-rien">Rien à noter</button>
+        </div>
+      </div>
+    </section>` : ''}
 
     ${rappel ? `
     <section class="carte bandeau-rappel" role="alert">
@@ -83,6 +102,12 @@ export async function afficher(el) {
       ${ref ? `<div class="muet petit">Dernier recalage : ${jjmm(ref.date)}</div>` : ''}
     </section>
 
+    <section class="carte carte-liste"><ul class="liste">
+      <li class="ligne-btn"><button type="button" id="a-repartition">
+        <i data-lucide="chart-pie"></i><span>Où part mon argent ?</span>
+        <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
+    </ul></section>
+
     ${proches.length ? `
     <h2>Budgets</h2>
     <section class="carte carte-liste"><ul class="liste">
@@ -114,11 +139,17 @@ export async function afficher(el) {
         <p>Rien d'encodé pour l'instant.<br>Touche le bouton « + » pour ajouter une dépense.</p></div>`}`;
 
   el.querySelector('#a-recaler').onclick = ouvrirRecalage;
+  el.querySelector('#a-repartition').onclick = () =>
+    window.dispatchEvent(new CustomEvent('naviguer', { detail: 'repartition' }));
+  if (sansSaisie >= JOURS_RAPPEL_SAISIE) {
+    el.querySelector('#a-noter').onclick = () => ouvrirSaisie();
+    el.querySelector('#a-rien').onclick = async () => { await db.definirParametre('saisie_confirmee', auj); redessiner(el); };
+  }
 
   if (rappel) {
     el.querySelector('#a-sauver').onclick = () =>
       window.dispatchEvent(new CustomEvent('naviguer', { detail: 'reglages' }));
-    el.querySelector('#a-reporter').onclick = async () => { await reporterRappel(); afficher(el); };
+    el.querySelector('#a-reporter').onclick = async () => { await reporterRappel(); redessiner(el); };
   }
 
   if (dernieres.length) {
