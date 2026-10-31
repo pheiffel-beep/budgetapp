@@ -243,3 +243,20 @@ input[type="text"], input[type="date"], input[type="search"], select {
 .op-titre { font-weight: 500; }
 .op-sous { color: var(--texte-2); font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .op-montant { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+
+/* =====================================================
+   Phase 2 : récurrents
+   ===================================================== */
+.nav-retour { display: flex; align-items: center; gap: .25rem; margin-left: -.75rem; }
+.nav-retour h1 { margin: .25rem 0; font-size: 1.35rem; }
+.ligne-btn { padding: 0 !important; }
+.ligne-btn > button {
+  width: 100%; display: flex; align-items: center; gap: .75rem; min-height: 56px;
+  padding: .5rem 0; border: none; background: none; text-align: left; cursor: pointer;
+}
+.a-completer { color: var(--orange); font-weight: 600; font-size: .9rem; }
+.bandeau-info { display: flex; gap: .75rem; align-items: flex-start; font-size: .9rem; }
+.bandeau-info svg.lucide { color: var(--accent); }
+.aide { margin: -.25rem 0 .5rem; line-height: 1.35; }
+.case { display: flex; align-items: center; gap: .6rem; min-height: 44px; margin: .25rem 0 .5rem; font-size: .9rem; color: var(--texte-2); }
+.case input { width: 22px; height: 22px; accent-color: var(--accent); }

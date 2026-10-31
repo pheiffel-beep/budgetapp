@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tests — Budget</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; background: #0f1115; color: #eef0f4; padding: 1rem; }
+    h1 { font-size: 1.3rem; }
+    li { margin: .35rem 0; line-height: 1.35; }
+    .ok { color: #3ecf8e; } .ko { color: #f25f5c; font-weight: 700; }
+    small { color: #9aa1ad; display: block; }
+    #bilan { font-size: 1.15rem; font-weight: 700; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Tests automatiques du moteur</h1>
+  <p>Cette page vérifie les règles de calcul sans toucher à tes données.</p>
+  <div id="bilan">…</div>
+  <ul id="liste"></ul>
+
+  <script type="module">
+    import { echeances } from './js/recurrents.js';
+    import { periodeContenant, libellePeriode } from './js/dates.js';
+    import { euros, versCentimes } from './js/format.js';
+
+    const tests = [];
+    const t = (nom, obtenu, attendu) => tests.push({ nom, obtenu: JSON.stringify(obtenu), attendu: JSON.stringify(attendu) });
+    const rec = (o) => ({ montant_centimes: 1000, frequence: 'mensuelle', date_fin: null, ...o });
+
+    // --- Récurrents ---
+    t('Mensuel le 5, d\'octobre à décembre',
+      echeances(rec({ date_debut: '2026-10-05' }), null, '2026-12-31'),
+      ['2026-10-05', '2026-11-05', '2026-12-05']);
+
+    t('Jour 31 → dernier jour des mois courts (févr. 28, avr. 30)',
+      echeances(rec({ date_debut: '2026-01-31' }), null, '2026-04-30'),
+      ['2026-01-31', '2026-02-28', '2026-03-31', '2026-04-30']);
+
+    t('Jour 31 en année bissextile (févr. 2028 = 29)',
+      echeances(rec({ date_debut: '2028-01-31' }), null, '2028-02-29'),
+      ['2028-01-31', '2028-02-29']);
+
+    t('Trimestriel ancré sur le 15/03 → 15/06, 15/09, 15/12',
+      echeances(rec({ frequence: 'trimestrielle', date_debut: '2026-03-15' }), null, '2026-12-31'),
+      ['2026-03-15', '2026-06-15', '2026-09-15', '2026-12-15']);
+
+    t('Annuel le 10/07, passe l\'année',
+      echeances(rec({ frequence: 'annuelle', date_debut: '2026-07-10' }), null, '2028-12-31'),
+      ['2026-07-10', '2027-07-10', '2028-07-10']);
+
+    t('Rattrapage : appli pas ouverte depuis 3 mois',
+      echeances(rec({ date_debut: '2026-01-05' }), '2026-02-05', '2026-05-20'),
+      ['2026-03-05', '2026-04-05', '2026-05-05']);
+
+    t('Pas de doublon : déjà généré jusqu\'au 05/05',
+      echeances(rec({ date_debut: '2026-01-05' }), '2026-05-05', '2026-05-31'),
+      []);
+
+    t('Échéance du jour même incluse',
+      echeances(rec({ date_debut: '2026-10-31' }), null, '2026-10-31'),
+      ['2026-10-31']);
+
+    t('Échéance future non générée',
+      echeances(rec({ date_debut: '2026-11-05' }), null, '2026-10-31'),
+      []);
+
+    t('Date de fin dépassée → plus rien après',
+      echeances(rec({ date_debut: '2026-01-10', date_fin: '2026-03-15' }), null, '2026-12-31'),
+      ['2026-01-10', '2026-02-10', '2026-03-10']);
+
+    t('Montant à 0 → ignoré',
+      echeances(rec({ date_debut: '2026-01-10', montant_centimes: 0 }), null, '2026-12-31'),
+      []);
+
+    t('Sans date de première échéance → ignoré',
+      echeances(rec({ date_debut: null }), null, '2026-12-31'),
+      []);
+
+    // --- Périodes ---
+    t('Période du mois (début le 1er)', periodeContenant('2026-10-31', 1), { annee: 2026, mois: 10, debut: '2026-10-01', fin: '2026-10-31' });
+    t('Période début le 25 (date le 10/11)', periodeContenant('2026-11-10', 25), { annee: 2026, mois: 10, debut: '2026-10-25', fin: '2026-11-24' });
+    t('Libellé période début le 25', libellePeriode(periodeContenant('2026-11-10', 25), 25), 'Période du 25/10 au 24/11');
+
+    // --- Formats ---
+    t('Format 1 234,56 €', euros(123456), '1 234,56 €');
+    t('Saisie « 12,5 » → 1250 centimes', versCentimes('12,5'), 1250);
+    t('Saisie invalide « 12,345 » → refusée', versCentimes('12,345'), null);
+
+    // --- Affichage ---
+    const ko = tests.filter(x => x.obtenu !== x.attendu);
+    document.getElementById('bilan').innerHTML = ko.length
+      ? `<span class="ko">${ko.length} test(s) en échec sur ${tests.length}</span>`
+      : `<span class="ok">✓ ${tests.length} tests réussis sur ${tests.length}</span>`;
+    document.getElementById('liste').innerHTML = tests.map(x => x.obtenu === x.attendu
+      ? `<li class="ok">✓ ${x.nom}</li>`
+      : `<li class="ko">✗ ${x.nom}<small>obtenu : ${x.obtenu}<br>attendu : ${x.attendu}</small></li>`).join('');
+  </script>
+</body>
+</html>

@@ -8,10 +8,15 @@ import * as accueil from './ecrans/accueil.js';
 import * as historique from './ecrans/historique.js';
 import * as budgets from './ecrans/budgets.js';
 import * as reglages from './ecrans/reglages.js';
+import * as recurrents from './ecrans/recurrents.js';
+import { genererRecurrents } from './recurrents.js';
+import { aujourdhui } from './format.js';
 
-export const VERSION = '0.2 — phase 1';
+export const VERSION = '0.3 — phase 2';
 
-const ECRANS = { accueil, historique, budgets, reglages };
+const ECRANS = { accueil, historique, budgets, reglages, recurrents };
+// Sous-écrans : quel onglet reste allumé
+const ONGLET_PARENT = { recurrents: 'reglages' };
 let ongletActuel = 'accueil';
 
 // ---------- Thème ----------
@@ -30,7 +35,7 @@ requeteSombre.addEventListener('change', () => appliquerTheme());
 export async function afficher(nom, { garderDefilement = false } = {}) {
   ongletActuel = nom;
   document.querySelectorAll('.onglets button').forEach(b => {
-    if (b.dataset.onglet === nom) b.setAttribute('aria-current', 'page');
+    if (b.dataset.onglet === (ONGLET_PARENT[nom] || nom)) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
   const conteneur = document.getElementById('ecran');
@@ -54,6 +59,9 @@ async function demarrer() {
   // Compteur d'ouvertures : sert à vérifier que les données survivent à la fermeture
   const n = (await db.parametre('nb_ouvertures', 0)) + 1;
   await db.definirParametre('nb_ouvertures', n);
+
+  // Récurrents : crée les opérations des échéances passées (rattrapage)
+  await genererRecurrents(aujourdhui());
 
   document.querySelectorAll('.onglets button').forEach(b =>
     b.addEventListener('click', () => afficher(b.dataset.onglet)));

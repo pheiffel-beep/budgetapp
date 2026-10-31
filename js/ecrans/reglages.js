@@ -1,5 +1,5 @@
 // Écran Réglages. Phase 0 : choix du thème (enregistré) + version.
-// Le reste (catégories, récurrents, sauvegarde, code…) arrive en phase 4.
+// Phase 2 : accès aux charges et revenus fixes. Le reste arrive en phase 4.
 
 import { db } from '../db.js';
 import { appliquerTheme, VERSION } from '../app.js';
@@ -17,6 +17,13 @@ export async function afficher(el) {
   el.innerHTML = `
     <h1>Réglages</h1>
 
+    <h2>Mes données</h2>
+    <section class="carte carte-liste"><ul class="liste">
+      <li class="ligne-btn"><button type="button" id="g-recurrents">
+        <i data-lucide="repeat"></i><span>Charges et revenus fixes</span>
+        <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
+    </ul></section>
+
     <h2>Thème</h2>
     <div class="segment" role="group" aria-label="Thème">
       ${THEMES.map(t => `<button type="button" data-theme-choix="${t.val}"
@@ -30,6 +37,9 @@ export async function afficher(el) {
         <li>Données <span class="ligne-val muet">sur ce téléphone uniquement</span></li>
       </ul>
     </section>`;
+
+  el.querySelector('#g-recurrents').onclick = () =>
+    window.dispatchEvent(new CustomEvent('naviguer', { detail: 'recurrents' }));
 
   el.querySelectorAll('[data-theme-choix]').forEach(b => b.addEventListener('click', async () => {
     const choix = b.dataset.themeChoix;

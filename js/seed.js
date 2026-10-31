@@ -1,10 +1,11 @@
 // Données de départ : catégories et paramètres par défaut.
 // Exécuté une seule fois, au tout premier lancement.
-// (Les récurrents seront créés par l'écran de premier lancement, en phase 5.)
+// Les versions suivantes ajoutent ce qui manque sans toucher aux données existantes.
 
 import { db } from './db.js';
+import { creerRecurrentsDepart } from './recurrents.js';
 
-const VERSION_DONNEES_DEPART = 1;
+const VERSION_DONNEES_DEPART = 2;
 
 // Catégories visibles dans la grille de saisie (dépenses)
 const VISIBLES = [
@@ -41,9 +42,15 @@ const REVENUS = [
 ];
 
 export async function initialiserDonnees() {
-  const deja = await db.parametre('version_donnees_depart');
-  if (deja) return false;
+  const version = await db.parametre('version_donnees_depart', 0);
+  if (version >= VERSION_DONNEES_DEPART) return false;
+  if (version < 1) await donneesV1();
+  if (version < 2) await creerRecurrentsDepart();   // phase 2 : liste des charges et revenus fixes
+  await db.definirParametre('version_donnees_depart', VERSION_DONNEES_DEPART);
+  return true;
+}
 
+async function donneesV1() {
   const categories = [
     ...VISIBLES.map((c, i) => ({ ...c, type: 'sortie', ordre: i, masquee: false, technique: false, utilisations: 0 })),
     ...TECHNIQUES.map((c, i) => ({ ...c, type: 'sortie', ordre: 100 + i, masquee: true, technique: true, utilisations: 0 })),
@@ -57,6 +64,4 @@ export async function initialiserDonnees() {
   await db.definirParametre('comptes', ['Courant', 'Épargne', 'Espèces']);
   await db.definirParametre('code_verrouillage', null);
   await db.definirParametre('date_derniere_sauvegarde', null);
-  await db.definirParametre('version_donnees_depart', VERSION_DONNEES_DEPART);
-  return true;
 }

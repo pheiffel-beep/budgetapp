@@ -30,6 +30,8 @@ export async function ouvrirSaisie(operation = null) {
     date: operation?.date ?? aujourdhui(),
     note: operation?.note ?? '',
     compte: operation?.compte ?? '',
+    recurrent: operation?.recurrent_id != null ? await db.lire('recurrents', operation.recurrent_id) : null,
+    majDefaut: false,
     optionsOuvertes: !!operation && !!(operation.note || operation.compte || operation.date !== aujourdhui()),
     categories,
     comptes,
@@ -117,6 +119,11 @@ function dessiner() {
       <span id="montant-valeur">${affichageMontant(s.saisie)}</span><span class="euro"> €</span>
     </div>
 
+    ${s.recurrent ? `
+      <label class="case"><input type="checkbox" id="s-maj" ${s.majDefaut ? 'checked' : ''}>
+        Mettre aussi à jour le montant par défaut de « ${esc(s.recurrent.libelle)} »
+        (${euros(s.recurrent.montant_centimes)})</label>` : ''}
+
     <div class="pave" role="group" aria-label="Pavé numérique">
       ${touches.map(t => `<button type="button" data-touche="${t}"
           aria-label="${t === 'eff' ? 'Effacer' : t === ',' ? 'Virgule' : t}">
@@ -182,6 +189,7 @@ function brancher(el) {
   });
   el.querySelector('.options').addEventListener('toggle', e => { s.optionsOuvertes = e.target.open; });
   el.querySelector('#s-enregistrer')?.addEventListener('click', valider);
+  el.querySelector('#s-maj')?.addEventListener('change', e => { s.majDefaut = e.target.checked; });
   el.querySelector('#s-supprimer')?.addEventListener('click', supprimer);
 }
 
@@ -210,13 +218,16 @@ async function valider() {
   };
   const id = await enregistrerOperation(op);
   const edition = s.edition;
+  // Récurrent : le modèle n'est modifié que si la case est cochée
+  const s_majFaite = !!(s.recurrent && s.majDefaut && s.recurrent.montant_centimes !== montant);
+  if (s_majFaite) await db.modifier('recurrents', { ...s.recurrent, montant_centimes: montant });
   const cat = s.categories.find(c => c.id === s.categorie_id);
   if (!edition) await compterUtilisation(op.categorie_id, 1);
   fermer();
   signalerChangement();
 
   if (edition) {
-    toast('Opération modifiée');
+    toast(s_majFaite ? 'Opération et montant par défaut modifiés' : 'Opération modifiée');
   } else {
     toast(`${libelleOperation(op, cat)} · ${euros(montant)}`, {
       action: 'Annuler',

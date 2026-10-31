@@ -10,7 +10,8 @@ const ICONE_VIREMENT = { icone: 'arrow-left-right', couleur: '#8c95a6' };
 
 export function htmlLigne(op, cat, { avecDate = false } = {}) {
   const visuel = op.type === 'virement' ? ICONE_VIREMENT : (cat || { icone: 'circle-help', couleur: '#8c95a6' });
-  const sous = [avecDate ? dateFR(op.date) : '', op.note, op.compte].filter(Boolean).map(esc).join(' · ');
+  const note = op.note && op.note !== libelleOperation(op, cat) ? op.note : '';
+  const sous = [avecDate ? dateFR(op.date) : '', note, op.compte].filter(Boolean).map(esc).join(' · ');
   const val = montantSigne(op);
   const signe = op.type === 'entree' ? '+' : '';
   const classe = op.type === 'entree' ? 'pos' : op.type === 'virement' ? 'neutre' : '';
