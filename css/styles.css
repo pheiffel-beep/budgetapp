@@ -479,3 +479,20 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-even
 @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
   .reste .montant { background: none; color: var(--texte); -webkit-text-fill-color: currentColor; }
 }
+
+/* =====================================================
+   Correctifs iPhone : le panneau de saisie ne doit jamais bouger de gauche à droite
+   (champ date plus large que l'écran, zoom automatique du clavier)
+   ===================================================== */
+html, body { overflow-x: hidden; }
+.panneau { overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; }
+.champ { grid-template-columns: minmax(0, 1fr); }             /* une colonne qui ne dépasse jamais du panneau */
+.champ input, .champ select { min-width: 0; max-width: 100%; }
+input[type="date"] {
+  -webkit-appearance: none; appearance: none;                 /* le champ date d'iOS ignore sinon la largeur demandée */
+  display: block; width: 100%; text-align: left; line-height: normal;
+}
+input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+input[type="text"], input[type="date"], input[type="search"], select, textarea {
+  font-size: max(16px, 1rem);                                 /* sous 16 px, iOS zoome sur le champ et décale la page */
+}
