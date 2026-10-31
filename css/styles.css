@@ -317,3 +317,23 @@ li.ligne-budget { padding: 0; }
 .ecart.baisse, .baisse { color: var(--vert); }
 .ecart.neutre { color: var(--texte-2); }
 .nav-mois .btn-icone:disabled { opacity: .3; cursor: default; }
+
+/* =====================================================
+   Gestion des catégories
+   ===================================================== */
+.apercu { display: flex; align-items: center; gap: .75rem; margin: .75rem 0; }
+.apercu input { flex: 1; }
+.sous-titre { font-size: .9rem; color: var(--texte-2); margin: 1rem 0 .4rem; font-weight: 600; }
+.grille-icones { display: grid; grid-template-columns: repeat(6, 1fr); gap: .35rem; }
+.grille-icones button {
+  min-height: 48px; border: 2px solid transparent; border-radius: 10px; background: var(--surface-2);
+  color: var(--texte); display: grid; place-items: center; cursor: pointer;
+}
+.grille-icones button[aria-pressed="true"] { border-color: var(--accent); background: var(--bord); }
+.grille-couleurs { display: grid; grid-template-columns: repeat(7, 1fr); gap: .5rem; }
+.grille-couleurs button {
+  min-height: 44px; border-radius: 50%; border: 3px solid transparent; cursor: pointer;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.25);
+}
+.grille-couleurs button[aria-pressed="true"] { border-color: var(--texte); }
+.panneau .pile { margin-top: .75rem; }

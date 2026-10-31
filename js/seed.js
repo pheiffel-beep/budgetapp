@@ -5,7 +5,7 @@
 import { db } from './db.js';
 import { creerRecurrentsDepart } from './recurrents.js';
 
-const VERSION_DONNEES_DEPART = 2;
+const VERSION_DONNEES_DEPART = 3;
 
 // Catégories visibles dans la grille de saisie (dépenses)
 const VISIBLES = [
@@ -17,7 +17,7 @@ const VISIBLES = [
   { nom: 'Enfants',            icone: 'baby',          couleur: '#ff85c0' },
   { nom: 'Vêtements',          icone: 'shirt',         couleur: '#36cfc9' },
   { nom: 'Équipement/Maison',  icone: 'sofa',          couleur: '#d4a373' },
-  { nom: 'Divers/Imprévus',    icone: 'circle-help',   couleur: '#8c95a6' },
+  { nom: 'Divers/Imprévus',    icone: 'circle-help',   couleur: '#8c95a6', cle: 'divers' },
 ];
 
 // Catégories techniques (masquées de la grille, servent aux charges fixes)
@@ -38,7 +38,7 @@ const TECHNIQUES = [
 const REVENUS = [
   { nom: 'Salaire',                icone: 'wallet',       couleur: '#3ecf8e' },
   { nom: 'Rémunération variable',  icone: 'trending-up',  couleur: '#3ecf8e' },
-  { nom: 'Autre revenu',           icone: 'circle-plus',  couleur: '#3ecf8e' },
+  { nom: 'Autre revenu',           icone: 'circle-plus',  couleur: '#3ecf8e', cle: 'autre_revenu' },
 ];
 
 export async function initialiserDonnees() {
@@ -46,6 +46,7 @@ export async function initialiserDonnees() {
   if (version >= VERSION_DONNEES_DEPART) return false;
   if (version < 1) await donneesV1();
   if (version < 2) await creerRecurrentsDepart();   // phase 2 : liste des charges et revenus fixes
+  if (version < 3) await ajouterClesSysteme();      // gestion des catégories : repère les catégories système
   await db.definirParametre('version_donnees_depart', VERSION_DONNEES_DEPART);
   return true;
 }
@@ -64,4 +65,12 @@ async function donneesV1() {
   await db.definirParametre('comptes', ['Courant', 'Épargne', 'Espèces']);
   await db.definirParametre('code_verrouillage', null);
   await db.definirParametre('date_derniere_sauvegarde', null);
+}
+
+/** Repère les catégories dont l'appli a besoin (recalage), même si l'utilisateur les renomme plus tard */
+async function ajouterClesSysteme() {
+  const cles = { 'Divers/Imprévus': 'divers', 'Autre revenu': 'autre_revenu' };
+  for (const c of await db.tous('categories')) {
+    if (cles[c.nom] && !c.cle) await db.modifier('categories', { ...c, cle: cles[c.nom] });
+  }
 }

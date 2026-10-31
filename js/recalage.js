@@ -45,11 +45,15 @@ export async function ouvrirRecalage() {
     }
     const ops = await db.operationsEntre(ref.date, auj);
     const attendu = soldeAttendu(ref, ops, auj, principal);
-    montrerEcart(ref, reel, attendu, auj);
+    await montrerEcart(ref, reel, attendu, auj);
   };
 }
 
-function montrerEcart(ref, reel, attendu, auj) {
+async function montrerEcart(ref, reel, attendu, auj) {
+  const cats = await db.tous('categories');
+  const trouver = (cle, nom) => cats.find(c => c.cle === cle) || cats.find(c => c.nom === nom);
+  const catDepense = trouver('divers', 'Divers/Imprévus');
+  const catRevenu = trouver('autre_revenu', 'Autre revenu');
   const ecart = reel - attendu;
   const note = `Recalage de solde`;
   const nouvelleRef = { solde_centimes: reel, date: auj };
@@ -82,7 +86,8 @@ function montrerEcart(ref, reel, attendu, auj) {
       : 'Il y a eu plus d\'argent entrant que ce que tu as encodé.'}</p>
     <div class="pile">
       <button type="button" class="btn btn-principal" id="rc-ranger">${manque
-        ? 'Ranger en dépense « Divers/Imprévus »' : 'Ranger en revenu « Autre revenu »'}</button>
+        ? `Ranger en dépense « ${esc(catDepense ? catDepense.nom : 'Divers/Imprévus')} »`
+        : `Ranger en revenu « ${esc(catRevenu ? catRevenu.nom : 'Autre revenu')} »`}</button>
       <button type="button" class="btn" id="rc-ignorer">Ignorer l'écart</button>
       <button type="button" class="btn" id="rc-annuler">Annuler</button>
     </div>`);
@@ -90,9 +95,7 @@ function montrerEcart(ref, reel, attendu, auj) {
   document.getElementById('rc-annuler').onclick = fermerPanneau;
   document.getElementById('rc-ignorer').onclick = () => terminer('Recalage enregistré, écart ignoré');
   document.getElementById('rc-ranger').onclick = async () => {
-    const cats = await db.tous('categories');
-    const cat = manque
-      ? cats.find(c => c.nom === 'Divers/Imprévus') : cats.find(c => c.nom === 'Autre revenu');
+    const cat = manque ? catDepense : catRevenu;
     await enregistrerOperation({
       type: manque ? 'sortie' : 'entree',
       montant_centimes: Math.abs(ecart),
@@ -101,6 +104,6 @@ function montrerEcart(ref, reel, attendu, auj) {
       compte: '',
       note,
     });
-    await terminer(manque ? 'Écart rangé en Divers/Imprévus' : 'Écart rangé en revenu');
+    await terminer(manque ? `Écart rangé en ${cat ? cat.nom : 'dépense'}` : 'Écart rangé en revenu');
   };
 }

@@ -32,6 +32,9 @@ export async function afficher(el) {
 
     <h2>Mes données</h2>
     <section class="carte carte-liste"><ul class="liste">
+      <li class="ligne-btn"><button type="button" id="g-categories">
+        <i data-lucide="tag"></i><span>Catégories</span>
+        <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
       <li class="ligne-btn"><button type="button" id="g-recurrents">
         <i data-lucide="repeat"></i><span>Charges et revenus fixes</span>
         <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
@@ -75,6 +78,8 @@ export async function afficher(el) {
       </ul>
     </section>`;
 
+  el.querySelector('#g-categories').onclick = () =>
+    window.dispatchEvent(new CustomEvent('naviguer', { detail: 'categories' }));
   el.querySelector('#g-recurrents').onclick = () =>
     window.dispatchEvent(new CustomEvent('naviguer', { detail: 'recurrents' }));
 
