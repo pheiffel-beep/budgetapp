@@ -12,7 +12,7 @@ import * as recurrents from './ecrans/recurrents.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.3 — phase 2';
+export const VERSION = '0.4 — sauvegarde';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents };
 // Sous-écrans : quel onglet reste allumé
@@ -59,6 +59,11 @@ async function demarrer() {
   // Compteur d'ouvertures : sert à vérifier que les données survivent à la fermeture
   const n = (await db.parametre('nb_ouvertures', 0)) + 1;
   await db.definirParametre('nb_ouvertures', n);
+
+  // Date de première utilisation (sert au premier rappel de sauvegarde)
+  if (!(await db.parametre('date_premiere_utilisation', null))) {
+    await db.definirParametre('date_premiere_utilisation', aujourdhui());
+  }
 
   // Récurrents : crée les opérations des échéances passées (rattrapage)
   await genererRecurrents(aujourdhui());

@@ -260,3 +260,17 @@ input[type="text"], input[type="date"], input[type="search"], select {
 .aide { margin: -.25rem 0 .5rem; line-height: 1.35; }
 .case { display: flex; align-items: center; gap: .6rem; min-height: 44px; margin: .25rem 0 .5rem; font-size: .9rem; color: var(--texte-2); }
 .case input { width: 22px; height: 22px; accent-color: var(--accent); }
+
+/* =====================================================
+   Sauvegarde et rappel
+   ===================================================== */
+.ligne-info { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 40px; }
+.ligne-info strong { font-variant-numeric: tabular-nums; }
+.bandeau-rappel { display: flex; gap: .75rem; align-items: flex-start; border-color: var(--orange); }
+.bandeau-rappel > svg.lucide { color: var(--orange); margin-top: .15rem; }
+.bandeau-rappel p { margin: .15rem 0 .5rem; }
+.rappel-actions { display: flex; gap: .5rem; }
+.rappel-actions .btn { min-height: 44px; }
+.btn-danger-plein { background: var(--rouge); color: #fff; }
+.ligne-info > span:first-child { flex-shrink: 0; }
+.ligne-info + .aide { margin-top: .5rem; }

@@ -92,4 +92,35 @@ export const db = {
 
   definirParametre: (cle, valeur) => transaction('parametres', 'readwrite', tx =>
     tx.objectStore('parametres').put({ cle, valeur })),
+
+  /** Copie complète de la base (toutes les tables + les paramètres), pour la sauvegarde */
+  async exporterTout() {
+    const base = await ouvrir();
+    const noms = [...TABLES, 'parametres'];
+    return new Promise((ok, ko) => {
+      const tx = base.transaction(noms, 'readonly');
+      const resultat = {};
+      noms.forEach(n => {
+        const req = tx.objectStore(n).getAll();
+        req.onsuccess = () => { resultat[n] = req.result; };
+      });
+      tx.oncomplete = () => ok(resultat);
+      tx.onerror = tx.onabort = () => ko(tx.error);
+    });
+  },
+
+  /**
+   * Remplace TOUTES les données par celles d'une sauvegarde, en une seule transaction :
+   * si quelque chose échoue, rien n'est modifié.
+   * Les paramètres locaux qui ne sont pas dans la sauvegarde (compteurs…) sont conservés.
+   */
+  remplacerTout: (donnees, parametres) => transaction([...TABLES, 'parametres'], 'readwrite', tx => {
+    for (const t of TABLES) {
+      const store = tx.objectStore(t);
+      store.clear();
+      (donnees[t] || []).forEach(obj => store.put(obj));
+    }
+    const sp = tx.objectStore('parametres');
+    Object.entries(parametres || {}).forEach(([cle, valeur]) => sp.put({ cle, valeur }));
+  }),
 };

@@ -23,6 +23,7 @@
     import { echeances } from './js/recurrents.js';
     import { periodeContenant, libellePeriode } from './js/dates.js';
     import { euros, versCentimes } from './js/format.js';
+    import { lireSauvegarde, ecartJours, nomFichier, FORMAT, VERSION_FORMAT } from './js/sauvegarde.js';
 
     const tests = [];
     const t = (nom, obtenu, attendu) => tests.push({ nom, obtenu: JSON.stringify(obtenu), attendu: JSON.stringify(attendu) });
@@ -86,6 +87,33 @@
     t('Format 1 234,56 €', euros(123456), '1 234,56 €');
     t('Saisie « 12,5 » → 1250 centimes', versCentimes('12,5'), 1250);
     t('Saisie invalide « 12,345 » → refusée', versCentimes('12,345'), null);
+
+    // --- Sauvegarde ---
+    const bonne = () => ({
+      format: FORMAT, version: VERSION_FORMAT, exporte_le: '2026-10-31T20:00:00.000Z',
+      donnees: {
+        operations: [{ id: 1, type: 'sortie', montant_centimes: 1250, date: '2026-10-31', categorie_id: 1 }],
+        categories: [{ id: 1, nom: 'Courses' }], recurrents: [{ id: 1, libelle: 'Loyer' }], budgets: [],
+      },
+      parametres: { theme: 'sombre' },
+    });
+    const lire = o => lireSauvegarde(JSON.stringify(o));
+    t('Sauvegarde valide acceptée', lire(bonne()).ok, true);
+    t('Résumé : 1 opération, 1 récurrent', (({ operations, recurrents }) => [operations, recurrents])(lire(bonne()).resume), [1, 1]);
+    t('Fichier illisible refusé', lireSauvegarde('pas du json').ok, false);
+    t('Autre type de fichier refusé', lire({ foo: 1 }).ok, false);
+    t('Version plus récente refusée', lire({ ...bonne(), version: 99 }).ok, false);
+    t('Table manquante refusée', lire({ ...bonne(), donnees: { operations: [] } }).ok, false);
+    t('Opération avec montant à virgule refusée',
+      lire({ ...bonne(), donnees: { ...bonne().donnees, operations: [{ id: 1, type: 'sortie', montant_centimes: 12.5, date: '2026-10-31' }] } }).ok, false);
+    t('Opération avec mauvaise date refusée',
+      lire({ ...bonne(), donnees: { ...bonne().donnees, operations: [{ id: 1, type: 'sortie', montant_centimes: 100, date: '31/10/2026' }] } }).ok, false);
+    t('Ligne sans identifiant refusée',
+      lire({ ...bonne(), donnees: { ...bonne().donnees, categories: [{ nom: 'X' }] } }).ok, false);
+    t('Sans paramètres : accepté, paramètres vides', lire({ ...bonne(), parametres: undefined }).sauvegarde.parametres, {});
+    t('Écart de jours sur un changement de mois', ecartJours('2026-10-25', '2026-11-04'), 10);
+    t('Écart de jours à travers le changement d\'heure', ecartJours('2026-10-20', '2026-10-31'), 11);
+    t('Nom du fichier', nomFichier('2026-10-31'), 'budget-sauvegarde-2026-10-31.json');
 
     // --- Affichage ---
     const ko = tests.filter(x => x.obtenu !== x.attendu);
