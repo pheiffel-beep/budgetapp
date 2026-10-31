@@ -1,13 +1,13 @@
 // Écran Accueil.
-// Phase 0 : emplacement du « reste à dépenser » + carte de vérification du socle.
-// La carte de vérification sera retirée en phase 3.
+// Phase 1 : emplacement du « reste à dépenser » (calcul en phase 3) + 5 dernières opérations.
 
 import { db } from '../db.js';
-import { euros, aujourdhui, dateFR, versCentimes } from '../format.js';
+import { categoriesParId, triRecent } from '../operations.js';
+import { htmlLigne, activerGestes } from '../ligne-operation.js';
 
 export async function afficher(el) {
-  const ouvertures = await db.parametre('nb_ouvertures', 0);
-  const nbCategories = await db.compter('categories');
+  const cats = await categoriesParId();
+  const dernieres = (await db.tous('operations')).sort(triRecent).slice(0, 5);
 
   el.innerHTML = `
     <h1>Accueil</h1>
@@ -18,15 +18,20 @@ export async function afficher(el) {
       <div class="muet petit">Le calcul arrive en phase 3</div>
     </section>
 
-    <h2>Vérification du socle (phase 0)</h2>
-    <section class="carte">
-      <ul class="liste">
-        <li>Ouvertures de l'application <span class="ligne-val">${ouvertures}</span></li>
-        <li>Catégories en mémoire <span class="ligne-val">${nbCategories} / 22</span></li>
-        <li>Date du jour <span class="ligne-val">${dateFR(aujourdhui())}</span></li>
-        <li>Format 123456 centimes <span class="ligne-val">${euros(123456)}</span></li>
-        <li>Format « 12,5 » saisi <span class="ligne-val">${euros(versCentimes('12,5'))}</span></li>
-        <li>Format négatif <span class="ligne-val">${euros(-1250)}</span></li>
-      </ul>
-    </section>`;
+    <h2>Dernières opérations</h2>
+    ${dernieres.length ? `
+      <section class="carte carte-liste">
+        <ul class="liste liste-ops" id="a-ops">
+          ${dernieres.map(o => htmlLigne(o, cats[o.categorie_id], { avecDate: true })).join('')}
+        </ul>
+      </section>
+      <button type="button" class="btn" id="a-tout">Voir tout l'historique</button>` : `
+      <div class="vide"><i data-lucide="circle-plus"></i>
+        <p>Rien d'encodé pour l'instant.<br>Touche le bouton « + » pour ajouter une dépense.</p></div>`}`;
+
+  if (dernieres.length) {
+    activerGestes(el.querySelector('#a-ops'), dernieres);
+    el.querySelector('#a-tout').onclick = () =>
+      window.dispatchEvent(new CustomEvent('naviguer', { detail: 'historique' }));
+  }
 }

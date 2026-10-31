@@ -158,3 +158,88 @@ svg.lucide { width: 1.4em; height: 1.4em; flex-shrink: 0; }
   display: flex; align-items: center; gap: .75rem;
 }
 .toast button { margin-left: auto; background: none; border: none; color: var(--accent); font-weight: 700; min-height: 44px; cursor: pointer; }
+
+/* =====================================================
+   Phase 1 : saisie, historique
+   ===================================================== */
+.centre { text-align: center; }
+.pos { color: var(--vert); }
+.neutre { color: var(--texte-2); }
+.pile { display: grid; gap: .5rem; }
+.btn-danger { background: transparent; color: var(--rouge); border: 1px solid var(--bord); margin-top: .5rem; }
+.btn-icone {
+  width: 48px; height: 48px; border: none; border-radius: 12px;
+  background: transparent; color: var(--texte); display: grid; place-items: center; cursor: pointer;
+}
+
+/* --- Panneau de saisie --- */
+.saisie-entete { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
+.titre-panneau { margin: 0; color: var(--texte); font-size: 1.15rem; }
+.montant-saisie {
+  text-align: center; font-size: 2.4rem; font-weight: 700; margin: .5rem 0;
+  font-variant-numeric: tabular-nums; min-height: 3.2rem;
+}
+.montant-saisie.type-entree { color: var(--vert); }
+.montant-saisie.type-virement { color: var(--texte-2); }
+.montant-saisie .euro { font-weight: 400; color: var(--texte-2); }
+
+.pave { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; margin-bottom: .75rem; }
+.pave button {
+  min-height: 46px; border: none; border-radius: 12px;
+  background: var(--surface-2); font-size: 1.35rem; font-weight: 500; cursor: pointer;
+  display: grid; place-items: center;
+}
+.pave button:active { background: var(--bord); }
+
+.grille-cat { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; margin: .5rem 0 .75rem; }
+.cat-btn {
+  display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  min-height: 76px; padding: .5rem .25rem; border-radius: 12px;
+  border: 2px solid transparent; background: var(--surface-2); cursor: pointer;
+  font-size: .78rem; line-height: 1.15; text-align: center;
+}
+.cat-btn[aria-pressed="true"] { border-color: var(--accent); }
+.cat-btn:active { transform: scale(.96); }
+.segment + .segment, .pave + .segment { margin-top: .5rem; }
+
+.options { margin: .5rem 0 .75rem; border-top: 1px solid var(--bord); padding-top: .5rem; }
+.options summary { min-height: 44px; display: flex; align-items: center; color: var(--texte-2); cursor: pointer; }
+.champ { display: grid; gap: .3rem; margin: .5rem 0; color: var(--texte-2); font-size: .9rem; }
+input[type="text"], input[type="date"], input[type="search"], select {
+  font: inherit; color: var(--texte); background: var(--surface-2);
+  border: 1px solid var(--bord); border-radius: 10px; padding: .6rem .75rem; min-height: 44px; width: 100%;
+  -webkit-user-select: text; user-select: text;
+}
+
+/* --- Historique --- */
+.nav-mois { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
+.filtres { display: grid; gap: .5rem; margin-bottom: .75rem; }
+.filtres-ligne { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.petit-seg button { font-size: .85rem; }
+.resume { display: flex; justify-content: space-between; color: var(--texte-2); font-size: .9rem; margin: .25rem 0 .5rem; }
+.resume strong { color: var(--texte); font-variant-numeric: tabular-nums; }
+.resume strong.pos { color: var(--vert); }
+.jour-titre {
+  display: flex; justify-content: space-between; font-size: .9rem; font-weight: 600;
+  margin: 1rem 0 .25rem; color: var(--texte-2);
+}
+.carte-liste { padding: 0 1rem; }
+
+/* --- Ligne d'opération (avec glisser pour supprimer) --- */
+.liste-ops li.op { position: relative; padding: 0; overflow: hidden; display: block; }
+.op-fond {
+  position: absolute; inset: 0; background: var(--rouge); color: #fff;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 1.25rem;
+  opacity: .55;
+}
+.op.pret .op-fond { opacity: 1; }
+.op-contenu {
+  position: relative; width: 100%; display: flex; align-items: center; gap: .75rem;
+  min-height: 56px; padding: .5rem 0; border: none; text-align: left; cursor: pointer;
+  background: var(--fond); touch-action: pan-y; transition: transform .15s ease-out;
+}
+.carte .op-contenu { background: var(--surface); }
+.op-texte { display: grid; min-width: 0; }
+.op-titre { font-weight: 500; }
+.op-sous { color: var(--texte-2); font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-montant { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }

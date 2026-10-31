@@ -2,13 +2,14 @@
 
 import { db } from './db.js';
 import { initialiserDonnees } from './seed.js';
-import { icones, ouvrirPanneau, fermerPanneau } from './ui.js';
+import { icones } from './ui.js';
+import { ouvrirSaisie } from './saisie.js';
 import * as accueil from './ecrans/accueil.js';
 import * as historique from './ecrans/historique.js';
 import * as budgets from './ecrans/budgets.js';
 import * as reglages from './ecrans/reglages.js';
 
-export const VERSION = '0.1 — phase 0';
+export const VERSION = '0.2 — phase 1';
 
 const ECRANS = { accueil, historique, budgets, reglages };
 let ongletActuel = 'accueil';
@@ -26,7 +27,7 @@ export async function appliquerTheme(choix) {
 requeteSombre.addEventListener('change', () => appliquerTheme());
 
 // ---------- Navigation ----------
-export async function afficher(nom) {
+export async function afficher(nom, { garderDefilement = false } = {}) {
   ongletActuel = nom;
   document.querySelectorAll('.onglets button').forEach(b => {
     if (b.dataset.onglet === nom) b.setAttribute('aria-current', 'page');
@@ -35,20 +36,15 @@ export async function afficher(nom) {
   const conteneur = document.getElementById('ecran');
   await ECRANS[nom].afficher(conteneur);
   icones();
-  window.scrollTo(0, 0);
+  if (!garderDefilement) window.scrollTo(0, 0);
 }
 
 /** Réaffiche l'onglet en cours (après une modification de données) */
-export const rafraichir = () => afficher(ongletActuel);
+export const rafraichir = () => afficher(ongletActuel, { garderDefilement: true });
 
-// ---------- Bouton + (la saisie arrive en phase 1) ----------
-function ouvrirSaisie() {
-  ouvrirPanneau(`
-    <h2 style="margin-top:0;color:var(--texte)">Nouvelle opération</h2>
-    <p class="muet">La saisie express arrive en phase 1.</p>
-    <button class="btn" id="fermer-saisie">Fermer</button>`);
-  document.getElementById('fermer-saisie').onclick = fermerPanneau;
-}
+// ---------- Rafraîchissement et navigation demandés par les écrans ----------
+window.addEventListener('donnees-modifiees', () => rafraichir());
+window.addEventListener('naviguer', e => afficher(e.detail));
 
 // ---------- Démarrage ----------
 async function demarrer() {
@@ -61,7 +57,7 @@ async function demarrer() {
 
   document.querySelectorAll('.onglets button').forEach(b =>
     b.addEventListener('click', () => afficher(b.dataset.onglet)));
-  document.getElementById('btn-ajout').addEventListener('click', ouvrirSaisie);
+  document.getElementById('btn-ajout').addEventListener('click', () => ouvrirSaisie());
 
   await afficher('accueil');
 }
