@@ -1,0 +1,160 @@
+/* ===== Thèmes ===== */
+:root, [data-theme="sombre"] {
+  --fond: #0f1115;
+  --surface: #191c22;
+  --surface-2: #232730;
+  --bord: #2e333d;
+  --texte: #eef0f4;
+  --texte-2: #9aa1ad;
+  --accent: #4f8cff;
+  --vert: #3ecf8e;
+  --orange: #f5a524;
+  --rouge: #f25f5c;
+  color-scheme: dark;
+}
+[data-theme="clair"] {
+  --fond: #f4f5f8;
+  --surface: #ffffff;
+  --surface-2: #eceef3;
+  --bord: #d9dce3;
+  --texte: #14161a;
+  --texte-2: #5d6470;
+  --accent: #2563eb;
+  --vert: #138a55;
+  --orange: #b46a00;
+  --rouge: #c62828;
+  color-scheme: light;
+}
+
+/* ===== Base ===== */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html {
+  font: -apple-system-body;            /* suit la taille de texte d'iOS */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+main {
+  padding: calc(env(safe-area-inset-top) + 1rem) 1rem
+           calc(env(safe-area-inset-bottom) + 6.5rem);
+  max-width: 40rem;
+  margin: 0 auto;
+  outline: none;
+}
+h1 { font-size: 1.6rem; margin: .25rem 0 1rem; }
+h2 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; color: var(--texte-2); font-weight: 600; }
+button { font: inherit; color: inherit; }
+svg.lucide { width: 1.4em; height: 1.4em; flex-shrink: 0; }
+
+/* ===== Cartes et listes ===== */
+.carte {
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: .75rem;
+}
+.muet { color: var(--texte-2); }
+.petit { font-size: .85rem; }
+.liste { list-style: none; margin: 0; padding: 0; }
+.liste li {
+  display: flex; align-items: center; gap: .75rem;
+  min-height: 48px; padding: .5rem 0;
+  border-bottom: 1px solid var(--bord);
+}
+.liste li:last-child { border-bottom: none; }
+.ligne-val { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+/* Pastille d'icône de catégorie */
+.pastille {
+  width: 2.5rem; height: 2.5rem; border-radius: 12px;
+  display: grid; place-items: center; flex-shrink: 0;
+  color: #fff;
+}
+.pastille svg.lucide { width: 1.25rem; height: 1.25rem; }
+
+/* ===== Accueil ===== */
+.reste { text-align: center; padding: 1.5rem 1rem; }
+.reste .montant {
+  font-size: 2.6rem; font-weight: 700; margin: .25rem 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Choix segmenté (thème…) ===== */
+.segment { display: flex; background: var(--surface-2); border-radius: 12px; padding: 4px; gap: 4px; }
+.segment button {
+  flex: 1; min-height: 44px; border: none; border-radius: 9px;
+  background: transparent; color: var(--texte-2); cursor: pointer;
+}
+.segment button[aria-pressed="true"] { background: var(--surface); color: var(--texte); font-weight: 600; }
+
+/* ===== État vide ===== */
+.vide { text-align: center; padding: 3rem 1rem; color: var(--texte-2); }
+.vide svg.lucide { width: 3rem; height: 3rem; margin-bottom: .5rem; opacity: .6; }
+
+/* ===== Barre d'onglets ===== */
+.onglets {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--bord);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.onglets button {
+  flex: 1; min-height: 56px; border: none; background: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: var(--texte-2); font-size: .72rem; cursor: pointer;
+}
+.onglets button[aria-current="page"] { color: var(--accent); font-weight: 600; }
+
+/* ===== Bouton + ===== */
+.fab {
+  position: fixed; z-index: 11;
+  right: 1.25rem;
+  bottom: calc(env(safe-area-inset-bottom) + 72px);
+  width: 60px; height: 60px; border-radius: 50%; border: none;
+  background: var(--accent); color: #fff;
+  display: grid; place-items: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  cursor: pointer;
+}
+.fab svg.lucide { width: 28px; height: 28px; }
+.fab:active { transform: scale(.94); }
+
+/* ===== Panneau du bas ===== */
+.voile { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 20; }
+.panneau {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
+  max-height: 92vh; overflow-y: auto;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 1rem 1rem calc(env(safe-area-inset-bottom) + 1rem);
+  max-width: 40rem; margin: 0 auto;
+}
+.panneau .poignee { width: 40px; height: 5px; border-radius: 3px; background: var(--bord); margin: 0 auto 1rem; }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+  width: 100%; min-height: 48px; border-radius: 12px; border: none;
+  background: var(--surface-2); color: var(--texte); cursor: pointer; font-weight: 600;
+}
+.btn-principal { background: var(--accent); color: #fff; }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; left: 1rem; right: 1rem; z-index: 30;
+  bottom: calc(env(safe-area-inset-bottom) + 140px);
+  max-width: 38rem; margin: 0 auto;
+  background: var(--texte); color: var(--fond);
+  border-radius: 12px; padding: .85rem 1rem;
+  display: flex; align-items: center; gap: .75rem;
+}
+.toast button { margin-left: auto; background: none; border: none; color: var(--accent); font-weight: 700; min-height: 44px; cursor: pointer; }

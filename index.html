@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr-BE" data-theme="sombre">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="google" content="notranslate">
+  <title>Budget</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="notranslate">
+  <!-- Écran courant -->
+  <main id="ecran" tabindex="-1"></main>
+
+  <!-- Bouton + (saisie) -->
+  <button id="btn-ajout" class="fab" aria-label="Ajouter une opération">
+    <i data-lucide="plus"></i>
+  </button>
+
+  <!-- Barre d'onglets -->
+  <nav class="onglets" aria-label="Navigation principale">
+    <button data-onglet="accueil" aria-label="Accueil"><i data-lucide="house"></i><span>Accueil</span></button>
+    <button data-onglet="historique" aria-label="Historique"><i data-lucide="list"></i><span>Historique</span></button>
+    <button data-onglet="budgets" aria-label="Budgets"><i data-lucide="target"></i><span>Budgets</span></button>
+    <button data-onglet="reglages" aria-label="Réglages"><i data-lucide="settings"></i><span>Réglages</span></button>
+  </nav>
+
+  <!-- Panneau du bas (saisie, menus) -->
+  <div id="voile" class="voile" hidden></div>
+  <section id="panneau" class="panneau" role="dialog" aria-modal="true" hidden></section>
+
+  <!-- Messages courts -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="lucide.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
