@@ -17,7 +17,7 @@ import { initialiserVerrou } from './verrou.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.8 — verrou et journal';
+export const VERSION = '0.9 — couleurs Prune';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran };
 // Sous-écrans : quel onglet reste allumé
@@ -32,7 +32,7 @@ export async function appliquerTheme(choix) {
   const effectif = theme === 'auto' ? (requeteSombre.matches ? 'sombre' : 'clair') : theme;
   document.documentElement.dataset.theme = effectif;
   document.querySelector('meta[name="theme-color"]')
-    .setAttribute('content', effectif === 'sombre' ? '#0f1115' : '#f4f5f8');
+    .setAttribute('content', effectif === 'sombre' ? '#231f33' : '#f7f3ec');
 }
 requeteSombre.addEventListener('change', () => appliquerTheme());
 
