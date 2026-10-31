@@ -17,7 +17,7 @@ import { initialiserVerrou } from './verrou.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.9 — couleurs Prune';
+export const VERSION = '0.10 — reflets';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran };
 // Sous-écrans : quel onglet reste allumé

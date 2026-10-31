@@ -40,6 +40,7 @@ export function activerGestes(liste, operations) {
 
     contenu.addEventListener('pointerdown', e => {
       x0 = e.clientX; y0 = e.clientY; dx = 0; glisse = false; annule = false; geste = false;
+      try { contenu.setPointerCapture(e.pointerId); } catch { /* pas grave */ }   // le geste reste suivi même si le doigt revient en arrière
       minuteur = setTimeout(() => { geste = true; menu(parId[id]); }, 550);
     });
     contenu.addEventListener('pointermove', e => {
@@ -49,6 +50,7 @@ export function activerGestes(liste, operations) {
       if (!glisse && Math.abs(my) > 10 && Math.abs(my) > Math.abs(mx)) { annule = true; return; }
       if (mx < -10 || glisse) {
         glisse = true; geste = true;
+        li.classList.add('glisse');
         dx = Math.min(0, mx);
         contenu.style.transform = `translateX(${dx}px)`;
         li.classList.toggle('pret', dx < -90);
@@ -61,7 +63,7 @@ export function activerGestes(liste, operations) {
         setTimeout(() => supprimerAvecAnnulation(id), 150);
       } else {
         contenu.style.transform = '';
-        li.classList.remove('pret');
+        li.classList.remove('pret', 'glisse');
       }
       glisse = false;
     };

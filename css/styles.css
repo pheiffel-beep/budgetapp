@@ -13,6 +13,22 @@
   --orange: #f2b765;
   --rouge: #f2807f;
   --sur-rouge: #1d1830;       /* texte posé sur un fond rouge */
+  --page-halo: radial-gradient(120% 55% at 15% 0%, #38325e 0%, rgba(35,31,51,0) 62%);
+  --carte-fond: linear-gradient(180deg, #3d3762 0%, #2f2a47 65%);
+  --carte-relief: inset 0 1px 0 rgba(255,255,255,.16), 0 8px 18px rgba(10,8,25,.35);
+  --reste-fond: linear-gradient(160deg, #4a3f80 0%, #3a3260 50%, #2e2945 100%);
+  --reste-bord: #7a6cc0;
+  --reste-texte-2: #cdc6ea;
+  --onglets-fond: linear-gradient(180deg, #3a345c, #2c2744);
+  --touche-fond: linear-gradient(180deg, #403964 0%, #342e52 100%);
+  --touche-relief: inset 0 1px 0 rgba(255,255,255,.12), 0 2px 0 rgba(0,0,0,.2);
+  --pastille-gloss: linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,0) 60%);
+  --bouton-fond: linear-gradient(180deg, #f1eaff 0%, #c8b5ff 46%, #9c82f0 50%, #b7a0ff 100%);
+  --bouton-bord: #8f78e0;
+  --bouton-ombre: inset 0 1px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(60,40,140,.4), 0 8px 20px rgba(150,120,255,.4);
+  --montant-fond: linear-gradient(180deg, #ffffff 0%, #e3d9ff 45%, #a995e8 100%);
+  --barre-gloss: linear-gradient(180deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.1) 50%, rgba(0,0,0,.15) 52%, rgba(255,255,255,.1) 100%);
+  --barre-creux: inset 0 1px 2px rgba(0,0,0,.5);
   color-scheme: dark;
 }
 /* Clair : crème chaud, accent violet profond */
@@ -29,6 +45,22 @@
   --orange: #9a5810;
   --rouge: #b73f3f;
   --sur-rouge: #ffffff;
+  --page-halo: radial-gradient(120% 55% at 15% 0%, #ffffff 0%, rgba(247,243,236,0) 62%);
+  --carte-fond: linear-gradient(180deg, #ffffff 0%, #fbf8f2 100%);
+  --carte-relief: inset 0 1px 0 rgba(255,255,255,1), 0 6px 14px rgba(70,50,110,.09);
+  --reste-fond: linear-gradient(160deg, #ece5fb 0%, #f5f1fb 55%, #fffdf9 100%);
+  --reste-bord: #b9a8ee;
+  --reste-texte-2: #5f5874;
+  --onglets-fond: linear-gradient(180deg, #ffffff, #f4efe6);
+  --touche-fond: linear-gradient(180deg, #f6f1e8 0%, #ebe4d6 100%);
+  --touche-relief: inset 0 1px 0 rgba(255,255,255,.9), 0 2px 0 rgba(120,100,70,.12);
+  --pastille-gloss: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,0) 60%);
+  --bouton-fond: linear-gradient(180deg, #7a5ce0 0%, #6446cc 46%, #4a2aa8 50%, #6b4bd1 100%);
+  --bouton-bord: #4a2aa8;
+  --bouton-ombre: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(30,10,90,.35), 0 8px 18px rgba(107,75,209,.35);
+  --montant-fond: linear-gradient(180deg, #2a2438 0%, #3d3358 55%, #5b4a8f 100%);
+  --barre-gloss: linear-gradient(180deg, rgba(255,255,255,.45) 0%, rgba(255,255,255,.08) 50%, rgba(0,0,0,.12) 52%, rgba(255,255,255,.08) 100%);
+  --barre-creux: inset 0 1px 2px rgba(60,40,100,.25);
   color-scheme: light;
 }
 
@@ -410,4 +442,40 @@ ul.journal pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .75r
 .reste {
   background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, var(--surface)) 0%, var(--surface) 75%);
   border-color: color-mix(in srgb, var(--accent) 38%, var(--bord));
+}
+
+
+/* =====================================================
+   Reflets : niveau 2 (métal) sur l'important — montant, boutons principaux, « + », barres de budget —
+   niveau 1 (satiné) sur le reste. Les couleurs viennent des variables des deux thèmes.
+   ===================================================== */
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--page-halo); }
+
+/* Niveau 1 : surfaces */
+.carte, .panneau { background: var(--carte-fond); box-shadow: var(--carte-relief); }
+.reste { background: var(--reste-fond); border-color: var(--reste-bord); --texte-2: var(--reste-texte-2); }
+.onglets { background: var(--onglets-fond); box-shadow: inset 0 1px 0 rgba(255,255,255,.10); }
+.pastille { background-image: var(--pastille-gloss) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 6px rgba(0,0,0,.2); }
+.pave button, .cat-btn, .pin-pave button { background: var(--touche-fond); box-shadow: var(--touche-relief); }
+.cat-btn[aria-pressed="true"] { border-color: var(--accent); }
+
+/* Les lignes d'opération sont transparentes (on voit le dégradé de la carte) ;
+   le fond rouge de la suppression n'apparaît que pendant le glissement */
+.op-contenu, .carte .op-contenu { background: transparent; }
+.op-fond { visibility: hidden; }
+.op.glisse .op-fond { visibility: visible; }
+.op.glisse .op-contenu { background: var(--surface); }
+
+/* Niveau 2 : éléments importants */
+.fab, .btn-principal { background: var(--bouton-fond); border: 1px solid var(--bouton-bord); box-shadow: var(--bouton-ombre); }
+.barre { box-shadow: var(--barre-creux); }
+.barre-remplie { background-image: var(--barre-gloss) !important; }
+.reste .montant {
+  background-image: var(--montant-fond);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+}
+.reste .montant.negatif { background-image: none; color: var(--rouge); -webkit-text-fill-color: var(--rouge); }
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .reste .montant { background: none; color: var(--texte); -webkit-text-fill-color: currentColor; }
 }
