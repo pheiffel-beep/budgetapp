@@ -25,6 +25,7 @@ const THEMES = [
 export async function afficher(el) {
   const actuel = await db.parametre('theme', 'sombre');
   const jourDebut = await db.parametre('jour_debut_mois', 1);
+  const saisieRapide = !!(await db.parametre('saisie_rapide', false));
   const code = await codeActif();
   const delaiVerrou = await db.parametre('delai_verrou', 60);
   const nbErreurs = (await db.journalTous()).filter(e => e.niveau === 'erreur').length;
@@ -46,6 +47,15 @@ export async function afficher(el) {
         <i data-lucide="repeat"></i><span>Charges et revenus fixes</span>
         <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
     </ul></section>
+
+    <h2>Saisie des dépenses</h2>
+    <section class="carte">
+      <label class="case"><input type="checkbox" id="g-rapide" ${saisieRapide ? 'checked' : ''}>
+        Enregistrement rapide</label>
+      <p class="muet petit aide">Désactivé (par défaut) : tu touches une catégorie, tu complètes si tu veux la date ou la note,
+        puis tu touches « Enregistrer ». Activé : toucher la catégorie enregistre aussitôt la dépense (un geste de moins,
+        mais la note et la date doivent être remplies avant).</p>
+    </section>
 
     <h2>Période du budget</h2>
     <section class="carte">
@@ -117,6 +127,11 @@ export async function afficher(el) {
     window.dispatchEvent(new CustomEvent('naviguer', { detail: 'categories' }));
   el.querySelector('#g-recurrents').onclick = () =>
     window.dispatchEvent(new CustomEvent('naviguer', { detail: 'recurrents' }));
+
+  el.querySelector('#g-rapide').onchange = async e => {
+    await db.definirParametre('saisie_rapide', e.target.checked);
+    toast(e.target.checked ? 'Enregistrement rapide activé' : 'Enregistrement rapide désactivé');
+  };
 
   el.querySelector('#g-jour').onchange = async e => {
     await db.definirParametre('jour_debut_mois', Number(e.target.value));

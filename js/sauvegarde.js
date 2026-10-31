@@ -11,7 +11,7 @@ export const FORMAT = 'budget-sauvegarde';
 export const VERSION_FORMAT = 1;
 
 // Paramètres inclus dans le fichier (pas les compteurs locaux ni la date de dernière sauvegarde)
-export const PARAMS_EXPORTES = ['jour_debut_mois', 'theme', 'comptes', 'version_donnees_depart', 'recalage_ref'];
+export const PARAMS_EXPORTES = ['jour_debut_mois', 'theme', 'comptes', 'version_donnees_depart', 'recalage_ref', 'saisie_rapide'];
 
 export const JOURS_RAPPEL = 30;            // rappel mensuel
 export const JOURS_RAPPEL_PREMIERE = 7;    // si aucune sauvegarde n'a encore été faite

@@ -34,6 +34,7 @@ export async function ouvrirSaisie(operation = null) {
     compte: operation?.compte ?? '',
     recurrent: operation?.recurrent_id != null ? await db.lire('recurrents', operation.recurrent_id) : null,
     majDefaut: false,
+    rapide: !operation && !!(await db.parametre('saisie_rapide', false)),   // mode « un appui sur la catégorie = enregistré »
     optionsOuvertes: !!operation && !!(operation.note || operation.compte || operation.date !== aujourdhui()),
     categories,
     comptes,
@@ -160,9 +161,11 @@ function dessiner() {
       </label>
     </details>
 
-    ${s.type === 'virement' || s.edition ? `
-      <button type="button" class="btn btn-principal" id="s-enregistrer">Enregistrer</button>` : `
-      <p class="muet petit centre">Touche une catégorie pour enregistrer.</p>`}
+    ${s.rapide && s.type !== 'virement' ? `
+      <p class="muet petit centre">Saisie rapide : une note ou une date se remplit <strong>avant</strong> de toucher la catégorie.</p>` : `
+      <div class="barre-enregistrer">
+        <button type="button" class="btn btn-principal" id="s-enregistrer">Enregistrer</button>
+      </div>`}
     ${s.edition ? `<button type="button" class="btn btn-danger" id="s-supprimer">Supprimer</button>` : ''}
   `;
   icones();
@@ -183,10 +186,10 @@ function brancher(el) {
   });
   el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
     s.categorie_id = Number(b.dataset.cat);
-    if (s.edition) {
-      el.querySelectorAll('[data-cat]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    if (s.rapide) {
+      valider();                                   // saisie rapide : un appui = enregistré
     } else {
-      valider();
+      el.querySelectorAll('[data-cat]').forEach(x => x.setAttribute('aria-pressed', x === b));
     }
   });
   el.querySelector('.options').addEventListener('toggle', e => { s.optionsOuvertes = e.target.open; });

@@ -392,3 +392,10 @@ ul.journal pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .75r
 .calcul .sous-liste { margin: 0 0 .5rem .9rem; padding-left: .6rem; border-left: 2px solid var(--bord); }
 .calcul .sous-liste li { font-size: .82rem; min-height: 32px; padding: .2rem 0; color: var(--texte-2); justify-content: space-between; }
 .calcul li.detail summary { color: var(--texte); }
+
+/* Bouton « Enregistrer » toujours visible en bas du panneau de saisie */
+.barre-enregistrer {
+  position: sticky; bottom: calc(-1 * (env(safe-area-inset-bottom) + 1rem));
+  margin: .5rem -1rem 0; padding: .6rem 1rem calc(env(safe-area-inset-bottom) + 1rem);
+  background: linear-gradient(to bottom, transparent, var(--surface) .6rem);
+}
