@@ -1,10 +1,14 @@
 // Écran Réglages : charges et revenus fixes, sauvegarde / restauration, thème, version.
-// La suite (catégories, jour de début de mois, code, journal) arrive plus tard.
+// Données, période, sauvegarde, sécurité (code), thème, dépannage (journal), à propos.
 
 import { db } from '../db.js';
 import { appliquerTheme, VERSION } from '../app.js';
 import { dateFR, aujourdhui } from '../format.js';
 import { toast, ouvrirPanneau, fermerPanneau, esc, icones } from '../ui.js';
+import { journal } from '../journal.js';
+import {
+  codeActif, definirCode, verifierCode, retirerCode, definirDelai, pavePin, pauseVerrou, verrouDisponible, LONGUEUR_CODE,
+} from '../verrou.js';
 import { signalerChangement } from '../operations.js';
 import { initialiserDonnees } from '../seed.js';
 import { genererRecurrents } from '../recurrents.js';
@@ -21,6 +25,9 @@ const THEMES = [
 export async function afficher(el) {
   const actuel = await db.parametre('theme', 'sombre');
   const jourDebut = await db.parametre('jour_debut_mois', 1);
+  const code = await codeActif();
+  const delaiVerrou = await db.parametre('delai_verrou', 60);
+  const nbErreurs = (await db.journalTous()).filter(e => e.niveau === 'erreur').length;
   const derniere = await db.parametre('date_derniere_sauvegarde', null);
   const jours = derniere ? ecartJours(derniere, aujourdhui()) : null;
   const etat = !derniere
@@ -64,11 +71,39 @@ export async function afficher(el) {
       <input type="file" id="g-fichier" accept=".json,application/json" hidden>
     </section>
 
+    <h2>Sécurité</h2>
+    <section class="carte">
+      <div class="ligne-info"><span>Verrouillage par code</span>
+        <span class="${code ? 'pos' : 'muet'}">${code ? 'Activé' : 'Désactivé'}</span></div>
+      ${!verrouDisponible() ? '<p class="muet petit aide">Indisponible : ce navigateur n\'autorise pas le chiffrement du code.</p>'
+        : code ? `
+        <label class="champ">Redemander le code
+          <select id="g-delai">
+            ${[[0, 'À chaque retour dans l\'appli'], [60, 'Après 1 minute d\'absence'], [300, 'Après 5 minutes d\'absence']]
+              .map(([v, l]) => `<option value="${v}" ${v === delaiVerrou ? 'selected' : ''}>${l}</option>`).join('')}
+          </select></label>
+        <div class="pile">
+          <button type="button" class="btn" id="g-code-changer">Changer le code</button>
+          <button type="button" class="btn btn-danger" id="g-code-off">Désactiver le code</button>
+        </div>`
+        : `<div class="pile"><button type="button" class="btn btn-principal" id="g-code-on"><i data-lucide="lock"></i>Définir un code à ${LONGUEUR_CODE} chiffres</button></div>`}
+      <p class="muet petit aide">Le code protège contre un regard indiscret, il ne chiffre pas tes données. Il n'est pas
+        inclus dans les sauvegardes. Si tu l'oublies, il faudra effacer l'application puis restaurer une sauvegarde :
+        pense à en faire une.</p>
+    </section>
+
     <h2>Thème</h2>
     <div class="segment" role="group" aria-label="Thème">
       ${THEMES.map(t => `<button type="button" data-theme-choix="${t.val}"
           aria-pressed="${t.val === actuel}">${t.label}</button>`).join('')}
     </div>
+
+    <h2>Dépannage</h2>
+    <section class="carte carte-liste"><ul class="liste">
+      <li class="ligne-btn"><button type="button" id="g-journal">
+        <i data-lucide="list"></i><span>Journal technique${nbErreurs ? ` <span class="a-completer">· ${nbErreurs} erreur${nbErreurs > 1 ? 's' : ''}</span>` : ''}</span>
+        <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
+    </ul></section>
 
     <h2>À propos</h2>
     <section class="carte">
@@ -88,10 +123,30 @@ export async function afficher(el) {
     toast('Période enregistrée');
   };
 
+  el.querySelector('#g-journal').onclick = () =>
+    window.dispatchEvent(new CustomEvent('naviguer', { detail: 'journal' }));
+
+  el.querySelector('#g-code-on')?.addEventListener('click', async () => {
+    const nouveau = await saisirNouveauCode();
+    if (nouveau) { await definirCode(nouveau); toast('Code activé'); afficher(el).then(icones); }
+  });
+  el.querySelector('#g-code-changer')?.addEventListener('click', async () => {
+    if (!(await demanderCodeActuel())) return;
+    const nouveau = await saisirNouveauCode('Choisis un nouveau code');
+    if (nouveau) { await definirCode(nouveau); toast('Code modifié'); afficher(el).then(icones); }
+  });
+  el.querySelector('#g-code-off')?.addEventListener('click', async () => {
+    if (!(await demanderCodeActuel())) return;
+    await retirerCode(); toast('Code désactivé'); afficher(el).then(icones);
+  });
+  el.querySelector('#g-delai')?.addEventListener('change', async e => {
+    await definirDelai(Number(e.target.value)); toast('Réglage enregistré');
+  });
+
   el.querySelector('#g-exporter').onclick = lancerExport;
 
   const entree = el.querySelector('#g-fichier');
-  el.querySelector('#g-restaurer').onclick = () => { entree.value = ''; entree.click(); };
+  el.querySelector('#g-restaurer').onclick = () => { pauseVerrou(); entree.value = ''; entree.click(); };
   entree.onchange = async () => {
     const fichier = entree.files[0];
     if (fichier) await preparerRestauration(fichier);
@@ -110,8 +165,10 @@ export async function afficher(el) {
 // ---------- Export ----------
 async function lancerExport() {
   let res;
+  pauseVerrou();                       // la feuille de partage met l'appli en arrière-plan
   try { res = await exporter(); }
-  catch (e) { toast('Impossible de créer la sauvegarde'); console.error(e); return; }
+  catch (e) { toast('Impossible de créer la sauvegarde'); journal.erreur('sauvegarde', e); return; }
+  finally { pauseVerrou(2000); }
 
   if (res.ok) {
     toast(res.mode === 'partage' ? 'Sauvegarde envoyée' : 'Sauvegarde téléchargée');
@@ -127,7 +184,10 @@ async function lancerExport() {
         <button type="button" class="btn" id="p-fermer">Annuler</button>
       </div>`);
     document.getElementById('p-partager').onclick = async () => {
-      if (await partagerFichier(res.fichier)) { fermerPanneau(); toast('Sauvegarde envoyée'); signalerChangement(); }
+      pauseVerrou();
+      const ok = await partagerFichier(res.fichier);
+      pauseVerrou(2000);
+      if (ok) { fermerPanneau(); toast('Sauvegarde envoyée'); signalerChangement(); }
     };
     document.getElementById('p-telecharger').onclick = async () => {
       await telechargerFichier(res.fichier); fermerPanneau(); toast('Sauvegarde téléchargée'); signalerChangement();
@@ -184,7 +244,42 @@ async function preparerRestauration(fichier) {
     } catch (e) {
       console.error(e);
       fermerPanneau();
+      journal.erreur('sauvegarde', e);
       toast('Échec de la restauration, tes données n\'ont pas été modifiées');
     }
   };
+}
+
+
+// ---------- Code de verrouillage : saisies dans un panneau ----------
+/** Demande un nouveau code (deux fois). Renvoie le code ou null si annulé. */
+function saisirNouveauCode(titre = 'Choisis un code') {
+  return new Promise(resolve => {
+    ouvrirPanneau('<div id="pz"></div><button type="button" class="btn" id="pz-annuler">Annuler</button>');
+    let premier = null;
+    const pin = pavePin(document.getElementById('pz'), {
+      titre, sousTitre: `${LONGUEUR_CODE} chiffres`,
+      surCode: (code) => {
+        if (premier === null) { premier = code; pin.reinitialiser(); pin.titre('Confirme ton code'); return; }
+        if (code !== premier) { premier = null; pin.titre(titre); pin.erreur('Les deux codes sont différents. Recommence.'); return; }
+        fermerPanneau(); resolve(code);
+      },
+    });
+    document.getElementById('pz-annuler').onclick = () => { fermerPanneau(); resolve(null); };
+  });
+}
+
+/** Demande le code actuel. Renvoie true s'il est correct, false si annulé. */
+function demanderCodeActuel() {
+  return new Promise(resolve => {
+    ouvrirPanneau('<div id="pz"></div><button type="button" class="btn" id="pz-annuler">Annuler</button>');
+    const pin = pavePin(document.getElementById('pz'), {
+      titre: 'Code actuel', sousTitre: 'Entre ton code pour continuer',
+      surCode: async (code) => {
+        if (await verifierCode(code)) { fermerPanneau(); resolve(true); }
+        else pin.erreur('Code incorrect');
+      },
+    });
+    document.getElementById('pz-annuler').onclick = () => { fermerPanneau(); resolve(false); };
+  });
 }

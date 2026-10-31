@@ -4,7 +4,7 @@
 // EXACTEMENT les mêmes fonctions, sans toucher au reste du code.
 
 const NOM_BASE = 'budget';
-const VERSION_BASE = 1;
+const VERSION_BASE = 2;   // v2 : ajout de la table « journal »
 export const TABLES = ['operations', 'categories', 'recurrents', 'budgets'];
 
 let ouverture = null;
@@ -26,6 +26,9 @@ function ouvrir() {
       }
       if (!base.objectStoreNames.contains('parametres')) {
         base.createObjectStore('parametres', { keyPath: 'cle' });
+      }
+      if (!base.objectStoreNames.contains('journal')) {
+        base.createObjectStore('journal', { keyPath: 'id', autoIncrement: true });
       }
     };
     req.onsuccess = () => ok(req.result);
@@ -92,6 +95,37 @@ export const db = {
 
   definirParametre: (cle, valeur) => transaction('parametres', 'readwrite', tx =>
     tx.objectStore('parametres').put({ cle, valeur })),
+
+  // ----- Journal technique (jamais inclus dans les sauvegardes) -----
+  journalAjouter: (entree) => transaction('journal', 'readwrite', tx => tx.objectStore('journal').add(entree)),
+  journalTous: () => transaction('journal', 'readonly', tx => tx.objectStore('journal').getAll()),
+  journalVider: () => transaction('journal', 'readwrite', tx => tx.objectStore('journal').clear()),
+
+  /** Ne garde que les `max` entrées les plus récentes */
+  async journalElaguer(max) {
+    const base = await ouvrir();
+    return new Promise((ok, ko) => {
+      const tx = base.transaction('journal', 'readwrite');
+      const store = tx.objectStore('journal');
+      const compte = store.count();
+      compte.onsuccess = () => {
+        let aSupprimer = compte.result - max;
+        if (aSupprimer <= 0) return;
+        const curseur = store.openCursor();
+        curseur.onsuccess = () => {
+          const c = curseur.result;
+          if (c && aSupprimer-- > 0) { c.delete(); c.continue(); }
+        };
+      };
+      tx.oncomplete = () => ok();
+      tx.onerror = tx.onabort = () => ko(tx.error);
+    });
+  },
+
+  /** Efface toutes les données de l'application (pas le journal). Sert au « code oublié ». */
+  viderTout: () => transaction([...TABLES, 'parametres'], 'readwrite', tx => {
+    [...TABLES, 'parametres'].forEach(n => tx.objectStore(n).clear());
+  }),
 
   /** Copie complète de la base (toutes les tables + les paramètres), pour la sauvegarde */
   async exporterTout() {

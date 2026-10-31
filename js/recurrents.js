@@ -2,6 +2,7 @@
 // et génération automatique des opérations au lancement.
 
 import { db } from './db.js';
+import { journal } from './journal.js';
 import { dateDe, joursDansMois } from './dates.js';
 
 export const FREQUENCES = { mensuelle: 1, trimestrielle: 3, annuelle: 12 };
@@ -69,6 +70,7 @@ export async function genererRecurrents(aujourdhui) {
     await db.modifier('recurrents', r);
     total += dates.length;
   }
+  if (total) journal.info('recurrents', `${total} opération${total > 1 ? 's' : ''} générée${total > 1 ? 's' : ''} automatiquement`);
   return total;
 }
 

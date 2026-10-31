@@ -337,3 +337,47 @@ li.ligne-budget { padding: 0; }
 }
 .grille-couleurs button[aria-pressed="true"] { border-color: var(--texte); }
 .panneau .pile { margin-top: .75rem; }
+
+/* =====================================================
+   Verrouillage par code et journal technique
+   ===================================================== */
+.verrou {
+  position: fixed; inset: 0; z-index: 100; background: var(--fond);
+  display: grid; place-items: center; padding: 1.5rem; overflow-y: auto;
+}
+.verrou-contenu { width: 100%; max-width: 22rem; display: grid; gap: .5rem; justify-items: center; }
+.verrou-logo { width: 64px; height: 64px; border-radius: 20px; background: var(--surface-2); display: grid; place-items: center; color: var(--accent); }
+.verrou-logo svg.lucide { width: 30px; height: 30px; }
+.verrou-oubli { text-align: left; justify-items: stretch; }
+.verrou-oubli .verrou-logo { justify-self: center; }
+.lien { background: none; border: none; color: var(--accent); min-height: 44px; font-size: .95rem; cursor: pointer; }
+
+.pin { width: 100%; text-align: center; }
+.pin-titre { margin: .75rem 0 .1rem; font-size: 1.2rem; color: var(--texte); }
+.pin-sous { margin: 0 0 .75rem; }
+.pin-points { display: flex; justify-content: center; gap: 1rem; margin: .5rem 0; }
+.pin-points span { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--texte-2); }
+.pin-points span.plein { background: var(--accent); border-color: var(--accent); }
+.pin-points.secoue { animation: secoue .35s; }
+@keyframes secoue { 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+.pin-erreur { min-height: 1.4rem; margin: .25rem 0 .5rem; color: var(--rouge); font-size: .9rem; }
+.pin-pave { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; max-width: 18rem; margin: 0 auto; }
+.pin-pave button {
+  min-height: 64px; border: none; border-radius: 50%; background: var(--surface-2); color: var(--texte);
+  font-size: 1.6rem; display: grid; place-items: center; cursor: pointer;
+}
+.pin-pave button:active { background: var(--bord); }
+.pin-pave button:disabled { opacity: .35; }
+.panneau #pz { margin-bottom: .5rem; }
+
+ul.journal li { display: block; padding: .6rem 0; min-height: 0; }
+.j-tete { display: flex; gap: .5rem; align-items: baseline; font-size: .8rem; color: var(--texte-2); flex-wrap: wrap; }
+.j-niveau { font-weight: 700; }
+.j-erreur .j-niveau { color: var(--rouge); }
+.j-avertissement .j-niveau { color: var(--orange); }
+.j-info .j-niveau { color: var(--texte-2); font-weight: 600; }
+.j-message { margin-top: .15rem; overflow-wrap: anywhere; }
+ul.journal details { margin-top: .25rem; }
+ul.journal summary { color: var(--accent); min-height: 32px; cursor: pointer; font-size: .85rem; }
+ul.journal pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .75rem; color: var(--texte-2); margin: .25rem 0; -webkit-user-select: text; user-select: text; }
+.btn:disabled { opacity: .4; }

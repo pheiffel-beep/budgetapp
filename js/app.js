@@ -11,14 +11,17 @@ import * as reglages from './ecrans/reglages.js';
 import * as recurrents from './ecrans/recurrents.js';
 import * as repartition from './ecrans/repartition.js';
 import * as categories from './ecrans/categories.js';
+import * as journalEcran from './ecrans/journal.js';
+import { journal, installerCapteurs } from './journal.js';
+import { initialiserVerrou } from './verrou.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.7 — catégories';
+export const VERSION = '0.8 — verrou et journal';
 
-const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories };
+const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran };
 // Sous-écrans : quel onglet reste allumé
-const ONGLET_PARENT = { recurrents: 'reglages', repartition: 'accueil', categories: 'reglages' };
+const ONGLET_PARENT = { recurrents: 'reglages', repartition: 'accueil', categories: 'reglages', journal: 'reglages' };
 let ongletActuel = 'accueil';
 
 // ---------- Thème ----------
@@ -55,7 +58,9 @@ window.addEventListener('naviguer', e => afficher(e.detail));
 
 // ---------- Démarrage ----------
 async function demarrer() {
-  await initialiserDonnees();
+  installerCapteurs();
+  await initialiserVerrou();            // le verrou s'affiche avant tout le reste
+  if (await initialiserDonnees()) await journal.info('donnees', 'Données de départ ou mise à jour appliquées');
   await appliquerTheme();
 
   // Compteur d'ouvertures : sert à vérifier que les données survivent à la fermeture
@@ -75,10 +80,12 @@ async function demarrer() {
   document.getElementById('btn-ajout').addEventListener('click', () => ouvrirSaisie());
 
   await afficher('accueil');
+  journal.info('demarrage', `Version ${VERSION}`);
 }
 
 demarrer().catch(err => {
   console.error(err);
+  journal.erreur('demarrage', err);
   document.getElementById('ecran').innerHTML =
     `<div class="carte"><strong>Erreur au démarrage</strong><p class="muet">${String(err)}</p></div>`;
 });

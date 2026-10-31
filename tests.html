@@ -30,6 +30,8 @@
       coupurePrecedente, comparerCategories, sommeDepenses, joursSansSaisie,
     } from './js/calculs.js';
     import { libelleDates } from './js/dates.js';
+    import { dureeBlocage, blocageApresEchec, doitVerrouiller, codeValide } from './js/verrou.js';
+    import { texteExport } from './js/journal.js';
     import { validerNom, groupeDe, ordreSuivant, estSysteme, ICONES, COULEURS } from './js/categories.js';
     import { eurosArrondis, versCentimesSigne } from './js/format.js';
 
@@ -249,6 +251,24 @@
     t('Catégorie système non supprimable', [estSysteme(lesCats[1]), estSysteme(lesCats[0])], [true, false]);
     t('Pas d\'icône en double', new Set(ICONES).size, ICONES.length);
     t('Pas de couleur en double', new Set(COULEURS).size, COULEURS.length);
+
+    // --- Verrouillage ---
+    t('Pas de blocage avant 5 échecs', [dureeBlocage(0), dureeBlocage(4)], [0, 0]);
+    t('Blocage 30 s à 5 échecs, 5 min à 10, 30 min à 15', [dureeBlocage(5), dureeBlocage(10), dureeBlocage(15), dureeBlocage(40)], [30000, 300000, 1800000, 1800000]);
+    t('On bloque tous les 5 échecs seulement', [blocageApresEchec(4, 1000), blocageApresEchec(5, 1000), blocageApresEchec(6, 1000), blocageApresEchec(10, 1000)], [0, 31000, 0, 301000]);
+    t('Verrou immédiat : toujours', doitVerrouiller(1000, 1001, 0), true);
+    t('Verrou après 60 s : 59 s non, 60 s oui', [doitVerrouiller(0, 59000, 60), doitVerrouiller(0, 60000, 60)], [false, true]);
+    t('Pas de verrou si l\'appli n\'a pas été masquée', doitVerrouiller(null, 99999999, 0), false);
+    t('Code valide : 4 chiffres exactement', ['1234', '0000', '123', '12345', 'abcd', '12a4', ''].map(codeValide), [true, true, false, false, false, false, false]);
+
+    // --- Journal ---
+    const txtJ = texteExport([
+      { id: 1, t: '2026-10-31T19:00:00.000Z', niveau: 'info', source: 'demarrage', message: 'Version 0.8' },
+      { id: 2, t: '2026-10-31T19:01:00.000Z', niveau: 'erreur', source: 'js', message: 'Oups', detail: 'ligne 1\nligne 2' },
+    ], { version: '0.8', exporteLe: '2026-10-31T19:02:00.000Z', appareil: 'test' }).split('\n');
+    t('Export du journal : en-tête', txtJ.slice(0, 5), ['Journal technique — Budget', 'Version : 0.8', 'Exporté le : 2026-10-31T19:02:00.000Z', 'Appareil : test', 'Entrées : 2']);
+    t('Export du journal : lignes et détail indenté', txtJ.slice(6, 10),
+      ['2026-10-31T19:00:00.000Z [info] demarrage — Version 0.8', '2026-10-31T19:01:00.000Z [erreur] js — Oups', '    ligne 1', '    ligne 2']);
 
     // --- Formats ---
     t('Euros arrondis', [eurosArrondis(4617), eurosArrondis(123456)], ['46\u00A0€', '1\u202F235\u00A0€']);

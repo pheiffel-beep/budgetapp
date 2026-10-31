@@ -2,6 +2,7 @@
 // Les fonctions « construire / lire / valider » sont pures et testées dans tests.html.
 
 import { db } from './db.js';
+import { journal } from './journal.js';
 import { aujourdhui } from './format.js';
 import { ajouterJours, ecartJours } from './dates.js';
 export { ecartJours };
@@ -106,6 +107,7 @@ export async function exporter() {
     try {
       await navigator.share({ files: [fichier], title: 'Sauvegarde Budget' });
       await marquerSauvegarde();
+      journal.info('sauvegarde', 'Export réussi (partage)');
       return { ok: true, mode: 'partage' };
     } catch (e) {
       if (e.name === 'AbortError') return { ok: false, annule: true };
@@ -116,6 +118,7 @@ export async function exporter() {
   }
   telecharger(fichier);
   await marquerSauvegarde();
+  journal.info('sauvegarde', 'Export réussi (téléchargement)');
   return { ok: true, mode: 'telechargement' };
 }
 
@@ -143,6 +146,7 @@ export async function telechargerFichier(fichier) {
 export async function restaurer(sauvegarde) {
   await db.remplacerTout(sauvegarde.donnees, sauvegarde.parametres);
   await marquerSauvegarde();   // les données actuelles correspondent au fichier
+  journal.info('sauvegarde', `Restauration réussie (${sauvegarde.donnees.operations.length} opérations)`);
 }
 
 // ---------- Rappel ----------
