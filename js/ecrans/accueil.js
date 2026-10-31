@@ -8,7 +8,7 @@ import { periodeContenant, libelleDates } from '../dates.js';
 import { categoriesParId, triRecent } from '../operations.js';
 import { htmlLigne, activerGestes } from '../ligne-operation.js';
 import { rappelNecessaire, reporterRappel } from '../sauvegarde.js';
-import { resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances, joursSansSaisie } from '../calculs.js';
+import { resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances, joursSansSaisie, echeancesAVenir } from '../calculs.js';
 import { budgetsParCategorie, htmlBarre } from '../budgets.js';
 import { ouvrirRecalage } from '../recalage.js';
 import { ouvrirSaisie } from '../saisie.js';
@@ -39,6 +39,22 @@ export async function afficher(el) {
     .sort((a, b) => b.st.ratio - a.st.ratio)
     .slice(0, 3);
   const echeances = prochainesEcheances(recs, auj, 31, 5);
+
+  // Détail de chaque ligne du calcul (pour vérifier ce qui est compté)
+  const dansPeriode = o => o.date >= per.debut && o.date <= per.fin;
+  const nomOp = o => (o.note && o.note.trim()) || (cats[o.categorie_id] ? cats[o.categorie_id].nom : (o.type === 'virement' ? 'Virement' : 'Sans catégorie'));
+  const lignesOps = liste => [...liste].sort((a, b) => a.date.localeCompare(b.date))
+    .map(o => `<li><span>${jjmm(o.date)} · ${esc(nomOp(o))}</span><span class="ligne-val">${euros(o.montant_centimes)}</span></li>`).join('');
+  const opsPeriode = toutes.filter(dansPeriode);
+  const detailRevenus = lignesOps(opsPeriode.filter(o => o.type === 'entree'));
+  const detailPayees = lignesOps(opsPeriode.filter(o => o.type === 'sortie'));
+  const detailVirements = lignesOps(opsPeriode.filter(o => o.type === 'virement'));
+  const aVenirListe = echeancesAVenir(recs, auj, per);
+  const lignesAVenir = liste => liste.map(e => `<li><span>${jjmm(e.date)} · ${esc(e.libelle)}</span><span class="ligne-val">${euros(e.montant)}</span></li>`).join('');
+  const detail = (titre, signe, total, lignes, classe = '') => lignes
+    ? `<li class="detail"><details><summary><span>${titre}</span><span class="ligne-val ${classe}">${signe}${euros(total)}</span></summary>
+         <ul class="liste sous-liste">${lignes}</ul></details></li>`
+    : `<li><span>${titre}</span><span class="ligne-val ${classe}">${signe}${euros(total)}</span></li>`;
 
   const negatif = calc.reste < 0;
   const epargne = calc.vers + calc.depuis > 0;
@@ -89,12 +105,15 @@ export async function afficher(el) {
       <details class="calcul">
         <summary>Voir le calcul</summary>
         <ul class="liste">
-          <li>Revenus reçus <span class="ligne-val pos">+${euros(calc.entrees)}</span></li>
-          <li>Dépenses et charges déjà payées <span class="ligne-val">-${euros(calc.sorties)}</span></li>
-          <li>Charges fixes encore à venir <span class="ligne-val">-${euros(v.charges)}</span></li>
-          ${calc.vers + v.vers ? `<li>Virements vers épargne (passés et à venir) <span class="ligne-val">-${euros(calc.vers + v.vers)}</span></li>` : ''}
-          ${calc.depuis + v.depuis ? `<li>Virements depuis épargne <span class="ligne-val pos">+${euros(calc.depuis + v.depuis)}</span></li>` : ''}
+          ${detail('Revenus reçus', '+', calc.entrees, detailRevenus, 'pos')}
+          ${detail('Dépenses et charges déjà payées', '-', calc.sorties, detailPayees)}
+          ${detail(`Charges fixes encore à venir (${aVenirListe.filter(e => e.type === 'sortie').length})`, '-', v.charges, lignesAVenir(aVenirListe.filter(e => e.type === 'sortie')))}
+          ${calc.vers + v.vers ? detail('Virements vers épargne (passés et à venir)', '-', calc.vers + v.vers,
+              detailVirements + lignesAVenir(aVenirListe.filter(e => e.type === 'virement' && e.sens !== 'depuis_epargne'))) : ''}
+          ${calc.depuis + v.depuis ? detail('Virements depuis épargne', '+', calc.depuis + v.depuis,
+              lignesAVenir(aVenirListe.filter(e => e.type === 'virement' && e.sens === 'depuis_epargne')), 'pos') : ''}
         </ul>
+        <p class="muet petit">Touche une ligne pour voir ce qu'elle contient.</p>
         <p class="muet petit">Les revenus pas encore reçus ne sont pas comptés.</p>
       </details>
 

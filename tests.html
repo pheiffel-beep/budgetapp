@@ -25,7 +25,7 @@
     import { euros, versCentimes } from './js/format.js';
     import { lireSauvegarde, ecartJours, nomFichier, FORMAT, VERSION_FORMAT } from './js/sauvegarde.js';
     import {
-      totauxPeriode, aVenir, resteADepenser, depensesParCategorie, statutBudget,
+      totauxPeriode, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
       franchissement, prochainesEcheances, soldeAttendu,
       coupurePrecedente, comparerCategories, sommeDepenses, joursSansSaisie,
     } from './js/calculs.js';
@@ -161,6 +161,10 @@
     t('Mois test : 17 jours restants (du 15 au 31)', mt.joursRestants, 17);
     t('Mois test : 46,17 € par jour (arrondi vers le bas)', mt.parJour, 4617);
 
+    t('Détail des échéances à venir (triées par date, revenus et montants à 0 exclus)',
+      echeancesAVenir(recs, '2026-10-15', oct).map(e => `${e.date} ${e.libelle} ${e.montant}`),
+      ['2026-10-18 Eau 9000', '2026-10-20 Spotify 1000', '2026-10-25 Taxe auto 15000', '2026-10-28 Poire pour la soif 10000']);
+    t('Le détail et le total sont cohérents', echeancesAVenir(recs, '2026-10-15', oct).reduce((s, e) => s + e.montant, 0), 25000 + 10000);
     t('Trimestrielle : comptée le mois où elle tombe, pas les autres',
       [aVenir(recs, '2026-10-15', oct).charges, aVenir(recs, '2026-11-01', { annee: 2026, mois: 11, debut: '2026-11-01', fin: '2026-11-30' }).charges],
       [25000, 1000 + 30000]);

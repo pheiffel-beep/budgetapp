@@ -381,3 +381,14 @@ ul.journal details { margin-top: .25rem; }
 ul.journal summary { color: var(--accent); min-height: 32px; cursor: pointer; font-size: .85rem; }
 ul.journal pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .75rem; color: var(--texte-2); margin: .25rem 0; -webkit-user-select: text; user-select: text; }
 .btn:disabled { opacity: .4; }
+
+/* Détail du calcul du reste à dépenser */
+.calcul li.detail { display: block; padding: 0; }
+.calcul details summary { display: flex; align-items: center; gap: .75rem; min-height: 44px; list-style: none; cursor: pointer; }
+.calcul details summary::-webkit-details-marker { display: none; }
+.calcul details summary > span:first-child::before { content: "›"; display: inline-block; margin-right: .4rem; color: var(--texte-2); transition: transform .15s; }
+.calcul details[open] summary > span:first-child::before { transform: rotate(90deg); }
+.calcul details summary .ligne-val { margin-left: auto; }
+.calcul .sous-liste { margin: 0 0 .5rem .9rem; padding-left: .6rem; border-left: 2px solid var(--bord); }
+.calcul .sous-liste li { font-size: .82rem; min-height: 32px; padding: .2rem 0; color: var(--texte-2); justify-content: space-between; }
+.calcul li.detail summary { color: var(--texte); }

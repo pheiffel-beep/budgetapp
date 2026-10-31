@@ -32,22 +32,30 @@ export function totauxPeriode(ops, per) {
 }
 
 /**
- * Échéances encore à venir dans la période (strictement après aujourd'hui).
+ * Détail des échéances encore à venir dans la période (strictement après aujourd'hui), triées par date.
  * Les charges trimestrielles et annuelles sont comprises dès qu'elles tombent dans la période.
  * Les revenus ne sont pas comptés.
  */
-export function aVenir(recs, auj, per) {
+export function echeancesAVenir(recs, auj, per) {
   const apres = auj >= per.debut ? auj : ajouterJours(per.debut, -1);
-  const r = { charges: 0, vers: 0, depuis: 0, nb: 0 };
+  const liste = [];
   for (const rec of recs) {
     if (rec.type === 'entree') continue;
-    const n = echeances(rec, apres, per.fin).length;
-    if (!n) continue;
-    const total = n * rec.montant_centimes;
-    if (rec.type === 'sortie') r.charges += total;
-    else if (rec.sens_virement === 'depuis_epargne') r.depuis += total;
-    else r.vers += total;
-    r.nb += n;
+    for (const date of echeances(rec, apres, per.fin)) {
+      liste.push({ date, libelle: rec.libelle, type: rec.type, sens: rec.sens_virement, montant: rec.montant_centimes, categorie_id: rec.categorie_id });
+    }
+  }
+  return liste.sort((a, b) => a.date.localeCompare(b.date) || a.libelle.localeCompare(b.libelle));
+}
+
+/** Totaux des échéances à venir : { charges, vers, depuis, nb } */
+export function aVenir(recs, auj, per) {
+  const r = { charges: 0, vers: 0, depuis: 0, nb: 0 };
+  for (const e of echeancesAVenir(recs, auj, per)) {
+    if (e.type === 'sortie') r.charges += e.montant;
+    else if (e.sens === 'depuis_epargne') r.depuis += e.montant;
+    else r.vers += e.montant;
+    r.nb++;
   }
   return r;
 }
