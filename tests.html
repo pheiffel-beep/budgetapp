@@ -24,6 +24,12 @@
     import { periodeContenant, libellePeriode } from './js/dates.js';
     import { euros, versCentimes } from './js/format.js';
     import { lireSauvegarde, ecartJours, nomFichier, FORMAT, VERSION_FORMAT } from './js/sauvegarde.js';
+    import {
+      totauxPeriode, aVenir, resteADepenser, depensesParCategorie, statutBudget,
+      franchissement, prochainesEcheances, soldeAttendu,
+    } from './js/calculs.js';
+    import { libelleDates } from './js/dates.js';
+    import { eurosArrondis, versCentimesSigne } from './js/format.js';
 
     const tests = [];
     const t = (nom, obtenu, attendu) => tests.push({ nom, obtenu: JSON.stringify(obtenu), attendu: JSON.stringify(attendu) });
@@ -114,6 +120,95 @@
     t('Écart de jours sur un changement de mois', ecartJours('2026-10-25', '2026-11-04'), 10);
     t('Écart de jours à travers le changement d\'heure', ecartJours('2026-10-20', '2026-10-31'), 11);
     t('Nom du fichier', nomFichier('2026-10-31'), 'budget-sauvegarde-2026-10-31.json');
+
+    // --- Reste à dépenser : « mois test » vérifié à la main ---
+    // Octobre 2026, on est le 15. Revenus 2 500 ; 5 charges fixes déjà payées (750+120+45+30+60 = 1 005) ;
+    // 30 dépenses de 10 € (300) ; virement vers épargne 100 ; virement depuis épargne 40.
+    // À venir : Spotify 10 (le 20), Eau trimestrielle 90 (le 18), Taxe auto annuelle 150 (le 25),
+    // virement mensuel vers épargne 100 (le 28). Ignorés : assurance trimestrielle (prochaine en novembre),
+    // rémunération variable à venir (revenu non reçu).
+    const oct = { annee: 2026, mois: 10, debut: '2026-10-01', fin: '2026-10-31' };
+    const op = (type, montant, date, extra = {}) => ({ id: Math.random(), type, montant_centimes: montant, date, categorie_id: 1, ...extra });
+    const ops = [
+      op('entree', 250000, '2026-10-01'),
+      ...[[75000, '05'], [12000, '06'], [4500, '07'], [3000, '08'], [6000, '10']].map(([m, j]) => op('sortie', m, `2026-10-${j}`, { categorie_id: 9 })),
+      ...Array.from({ length: 30 }, (_, i) => op('sortie', 1000, `2026-10-${String(1 + (i % 14)).padStart(2, '0')}`, { categorie_id: 2 })),
+      op('virement', 10000, '2026-10-03', { sens_virement: 'vers_epargne', categorie_id: null }),
+      op('virement', 4000, '2026-10-12', { sens_virement: 'depuis_epargne', categorie_id: null }),
+      op('sortie', 99900, '2026-09-30', { categorie_id: 2 }),   // hors période : ignorée
+      op('sortie', 99900, '2026-11-01', { categorie_id: 2 }),   // hors période : ignorée
+    ];
+    const recs = [
+      { type: 'sortie', frequence: 'mensuelle', montant_centimes: 1000, date_debut: '2026-01-20', libelle: 'Spotify' },
+      { type: 'sortie', frequence: 'trimestrielle', montant_centimes: 9000, date_debut: '2026-01-18', libelle: 'Eau' },
+      { type: 'sortie', frequence: 'annuelle', montant_centimes: 15000, date_debut: '2025-10-25', libelle: 'Taxe auto' },
+      { type: 'sortie', frequence: 'trimestrielle', montant_centimes: 30000, date_debut: '2026-02-10', libelle: 'Assurance hospitalisation' },
+      { type: 'entree', frequence: 'mensuelle', montant_centimes: 40000, date_debut: '2026-01-25', libelle: 'Rémunération variable' },
+      { type: 'virement', sens_virement: 'vers_epargne', frequence: 'mensuelle', montant_centimes: 10000, date_debut: '2026-01-28', libelle: 'Poire pour la soif' },
+      { type: 'sortie', frequence: 'mensuelle', montant_centimes: 0, date_debut: '2026-01-22', libelle: 'Sans montant' },
+    ];
+    const mt = resteADepenser(ops, recs, '2026-10-15', oct);
+    t('Mois test : revenus reçus', mt.entrees, 250000);
+    t('Mois test : dépenses et charges déjà payées (1 005 + 300)', mt.sorties, 130500);
+    t('Mois test : virements vers / depuis épargne saisis', [mt.vers, mt.depuis], [10000, 4000]);
+    t('Mois test : charges à venir (Spotify 10 + Eau 90 + Taxe 150)', mt.aVenir.charges, 25000);
+    t('Mois test : virement à venir', mt.aVenir.vers, 10000);
+    t('Mois test : RESTE À DÉPENSER = 785,00 €', mt.reste, 78500);
+    t('Mois test : 17 jours restants (du 15 au 31)', mt.joursRestants, 17);
+    t('Mois test : 46,17 € par jour (arrondi vers le bas)', mt.parJour, 4617);
+
+    t('Trimestrielle : comptée le mois où elle tombe, pas les autres',
+      [aVenir(recs, '2026-10-15', oct).charges, aVenir(recs, '2026-11-01', { annee: 2026, mois: 11, debut: '2026-11-01', fin: '2026-11-30' }).charges],
+      [25000, 1000 + 30000]);
+    t('Une échéance du jour même (déjà générée) n\'est plus « à venir »', aVenir(recs, '2026-10-20', oct).charges, 15000);
+    t('Fin de période : plus rien à venir', resteADepenser([], [], '2026-10-31', oct).joursRestants, 1);
+    t('Reste négatif : 0 € par jour', resteADepenser([op('sortie', 5000, '2026-10-02')], [], '2026-10-15', oct).parJour, 0);
+    t('Virement depuis épargne remonte le reste',
+      resteADepenser([op('virement', 5000, '2026-10-02', { sens_virement: 'depuis_epargne' })], [], '2026-10-15', oct).reste, 5000);
+    t('Virement vers épargne baisse le reste',
+      resteADepenser([op('virement', 5000, '2026-10-02', { sens_virement: 'vers_epargne' })], [], '2026-10-15', oct).reste, -5000);
+    t('Période commençant le 25 : opérations du 24/10 exclues, du 25/10 incluses',
+      totauxPeriode([op('sortie', 100, '2026-10-24'), op('sortie', 200, '2026-10-25')], { debut: '2026-10-25', fin: '2026-11-24' }).sorties, 200);
+    t('Période pas encore commencée : à venir compté depuis son début',
+      aVenir(recs, '2026-10-20', { annee: 2026, mois: 11, debut: '2026-11-01', fin: '2026-11-30' }).charges, 31000);
+
+    // --- Budgets ---
+    t('Dépenses par catégorie (hors période ignorées)', depensesParCategorie(ops, oct), { 9: 100500, 2: 30000 });
+    t('Budget : 79 % vert', statutBudget(7900, 10000).couleur, 'vert');
+    t('Budget : 80 % orange', statutBudget(8000, 10000).couleur, 'orange');
+    t('Budget : 100 % orange', statutBudget(10000, 10000).couleur, 'orange');
+    t('Budget : 100,01 % rouge', statutBudget(10001, 10000).couleur, 'rouge');
+    t('Alerte : passage de 70 % à 85 % → 80', franchissement(7000, 8500, 10000), 80);
+    t('Alerte : passage de 85 % à 95 % → rien', franchissement(8500, 9500, 10000), null);
+    t('Alerte : passage de 95 % à 105 % → 100', franchissement(9500, 10500, 10000), 100);
+    t('Alerte : de 50 % à 120 % → 100 (le plus grave)', franchissement(5000, 12000, 10000), 100);
+    t('Alerte : pile 80 % déclenche', franchissement(7900, 8000, 10000), 80);
+    t('Alerte : déjà dépassé → rien', franchissement(11000, 12000, 10000), null);
+    t('Alerte : sans budget → rien', franchissement(0, 5000, 0), null);
+
+    // --- Prochaines échéances ---
+    t('Prochaines échéances à 15 jours (triées, max 3)',
+      prochainesEcheances(recs, '2026-10-15', 15, 3).map(e => `${e.date} ${e.libelle}`),
+      ['2026-10-18 Eau', '2026-10-20 Spotify', '2026-10-25 Rémunération variable']);
+
+    // --- Recalage ---
+    const ref = { solde_centimes: 100000, date: '2026-10-10' };
+    const flux = [
+      op('sortie', 2000, '2026-10-10'),                                   // même jour que le recalage : exclue
+      op('sortie', 3000, '2026-10-11'),
+      op('entree', 50000, '2026-10-12'),
+      op('virement', 10000, '2026-10-13', { sens_virement: 'vers_epargne' }),
+      op('virement', 4000, '2026-10-14', { sens_virement: 'depuis_epargne' }),
+      op('sortie', 7000, '2026-10-14', { compte: 'Espèces' }),            // autre compte : exclue
+      op('sortie', 1000, '2026-10-15', { compte: 'Courant' }),
+      op('sortie', 9000, '2026-10-20'),                                   // dans le futur : exclue
+    ];
+    t('Solde attendu : 1 000 − 30 + 500 − 100 + 40 − 10 = 1 400,00 €', soldeAttendu(ref, flux, '2026-10-15', 'Courant'), 140000);
+
+    // --- Formats ---
+    t('Euros arrondis', [eurosArrondis(4617), eurosArrondis(123456)], ['46\u00A0€', '1\u202F235\u00A0€']);
+    t('Saisie négative « -12,5 »', versCentimesSigne('-12,5'), -1250);
+    t('Libellé « Période du 25/10 au 24/11 »', libelleDates({ debut: '2026-10-25', fin: '2026-11-24' }), 'Période du 25/10 au 24/11');
 
     // --- Affichage ---
     const ko = tests.filter(x => x.obtenu !== x.attendu);

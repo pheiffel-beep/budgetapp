@@ -274,3 +274,30 @@ input[type="text"], input[type="date"], input[type="search"], select {
 .btn-danger-plein { background: var(--rouge); color: #fff; }
 .ligne-info > span:first-child { flex-shrink: 0; }
 .ligne-info + .aide { margin-top: .5rem; }
+
+/* =====================================================
+   Accueil, budgets, recalage
+   ===================================================== */
+.reste .montant.negatif, .negatif { color: var(--rouge); }
+.reste > * + * { margin-top: .2rem; }
+.reste .montant { font-size: 2.8rem; }
+.calcul { text-align: left; margin-top: .75rem; border-top: 1px solid var(--bord); padding-top: .25rem; }
+.calcul summary { min-height: 44px; display: flex; align-items: center; justify-content: center; color: var(--accent); cursor: pointer; }
+.calcul .liste li { font-size: .9rem; min-height: 40px; }
+.btn-leger { margin-top: .75rem; background: transparent; border: 1px solid var(--bord); font-weight: 500; }
+
+.barre { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: .3rem 0; width: 100%; }
+.barre-remplie { height: 100%; border-radius: 4px; min-width: 2px; }
+.barre-remplie.vert { background: var(--vert); }
+.barre-remplie.orange { background: var(--orange); }
+.barre-remplie.rouge { background: var(--rouge); }
+.pct { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.2rem; text-align: right; }
+.pct.vert { color: var(--vert); } .pct.orange { color: var(--orange); } .pct.rouge { color: var(--rouge); }
+.ligne-budget .op-texte { flex: 1; }
+.ligne-btn-faux { width: 100%; display: flex; align-items: center; gap: .75rem; min-height: 56px; padding: .5rem 0; }
+li.ligne-budget { padding: 0; }
+
+/* Messages d'alerte de budget */
+.toast { white-space: pre-line; }
+.toast-alerte { border-left: 6px solid var(--orange); }
+.toast-danger { border-left: 6px solid var(--rouge); }

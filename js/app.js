@@ -12,7 +12,7 @@ import * as recurrents from './ecrans/recurrents.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.4 — sauvegarde';
+export const VERSION = '0.5 — accueil et budgets';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents };
 // Sous-écrans : quel onglet reste allumé

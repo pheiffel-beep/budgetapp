@@ -20,6 +20,7 @@ const THEMES = [
 
 export async function afficher(el) {
   const actuel = await db.parametre('theme', 'sombre');
+  const jourDebut = await db.parametre('jour_debut_mois', 1);
   const derniere = await db.parametre('date_derniere_sauvegarde', null);
   const jours = derniere ? ecartJours(derniere, aujourdhui()) : null;
   const etat = !derniere
@@ -35,6 +36,17 @@ export async function afficher(el) {
         <i data-lucide="repeat"></i><span>Charges et revenus fixes</span>
         <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
     </ul></section>
+
+    <h2>Période du budget</h2>
+    <section class="carte">
+      <label class="champ">Ma période commence le
+        <select id="g-jour">
+          ${Array.from({ length: 28 }, (_, i) => i + 1).map(j =>
+            `<option value="${j}" ${j === jourDebut ? 'selected' : ''}>${j === 1 ? '1er du mois (mois civil)' : `${j} du mois`}</option>`).join('')}
+        </select></label>
+      <p class="muet petit aide">Si tu es payé vers le 25, choisis ce jour : ta période ira par exemple du 25 au 24
+        du mois suivant, et le « reste à dépenser » repartira à zéro à chaque salaire.</p>
+    </section>
 
     <h2>Sauvegarde</h2>
     <section class="carte">
@@ -65,6 +77,11 @@ export async function afficher(el) {
 
   el.querySelector('#g-recurrents').onclick = () =>
     window.dispatchEvent(new CustomEvent('naviguer', { detail: 'recurrents' }));
+
+  el.querySelector('#g-jour').onchange = async e => {
+    await db.definirParametre('jour_debut_mois', Number(e.target.value));
+    toast('Période enregistrée');
+  };
 
   el.querySelector('#g-exporter').onclick = lancerExport;
 

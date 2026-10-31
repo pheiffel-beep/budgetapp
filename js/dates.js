@@ -64,3 +64,15 @@ export function libelleJour(iso) {
 }
 
 export const majuscule = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** Nombre de jours entre deux dates « AAAA-MM-JJ » */
+export function ecartJours(de, a) {
+  const t = iso => { const [y, m, j] = iso.split('-').map(Number); return Date.UTC(y, m - 1, j); };
+  return Math.round((t(a) - t(de)) / 86400000);
+}
+
+/** « Période du 01/10 au 31/10 » */
+export function libelleDates(per) {
+  const c = iso => { const [, m, j] = iso.split('-'); return `${j}/${m}`; };
+  return `Période du ${c(per.debut)} au ${c(per.fin)}`;
+}

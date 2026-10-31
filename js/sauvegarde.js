@@ -3,13 +3,14 @@
 
 import { db } from './db.js';
 import { aujourdhui } from './format.js';
-import { ajouterJours } from './dates.js';
+import { ajouterJours, ecartJours } from './dates.js';
+export { ecartJours };
 
 export const FORMAT = 'budget-sauvegarde';
 export const VERSION_FORMAT = 1;
 
 // Paramètres inclus dans le fichier (pas les compteurs locaux ni la date de dernière sauvegarde)
-export const PARAMS_EXPORTES = ['jour_debut_mois', 'theme', 'comptes', 'version_donnees_depart'];
+export const PARAMS_EXPORTES = ['jour_debut_mois', 'theme', 'comptes', 'version_donnees_depart', 'recalage_ref'];
 
 export const JOURS_RAPPEL = 30;            // rappel mensuel
 export const JOURS_RAPPEL_PREMIERE = 7;    // si aucune sauvegarde n'a encore été faite
@@ -18,12 +19,6 @@ const TYPES_OPERATION = ['sortie', 'entree', 'virement'];
 const RE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const nomFichier = (dateIso) => `budget-sauvegarde-${dateIso}.json`;
-
-/** Nombre de jours entre deux dates « AAAA-MM-JJ » */
-export function ecartJours(de, a) {
-  const t = iso => { const [y, m, j] = iso.split('-').map(Number); return Date.UTC(y, m - 1, j); };
-  return Math.round((t(a) - t(de)) / 86400000);
-}
 
 // ---------- Construire ----------
 export async function construireSauvegarde() {

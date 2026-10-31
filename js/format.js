@@ -46,3 +46,18 @@ export function jjmm(iso) {
   const [, m, j] = iso.split('-');
   return `${j}/${m}`;
 }
+
+/** 4617 → « 46 € » (sans décimales, pour les ordres de grandeur) */
+export function eurosArrondis(centimes) {
+  const negatif = centimes < 0;
+  const ent = Math.floor(Math.abs(Math.round(centimes / 100))).toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ESPACE_MILLIERS);
+  return (negatif ? '-' : '') + ent + ESPACE_EURO + '€';
+}
+
+/** Comme versCentimes, mais accepte un signe moins (solde négatif) */
+export function versCentimesSigne(texte) {
+  const t = String(texte ?? '').trim().replace('\u2212', '-');
+  if (t.startsWith('-')) { const v = versCentimes(t.slice(1)); return v == null ? null : -v; }
+  return versCentimes(t);
+}

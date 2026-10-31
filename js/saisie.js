@@ -2,6 +2,8 @@
 
 import { db } from './db.js';
 import { euros, aujourdhui } from './format.js';
+import { periodeContenant } from './dates.js';
+import { franchissement, depensesParCategorie } from './calculs.js';
 import { ouvrirPanneau, fermerPanneau, toast, esc, pastille, icones } from './ui.js';
 import {
   enregistrerOperation, supprimerOperation, restaurerOperation, compterUtilisation,
@@ -226,12 +228,19 @@ async function valider() {
   fermer();
   signalerChangement();
 
+  // Alerte de budget (80 % puis 100 %) pour une nouvelle sortie
+  let alerte = null;
+  if (!edition && op.type === 'sortie' && op.categorie_id != null) {
+    alerte = await alerteBudget(op, cat);
+  }
+
   if (edition) {
     toast(s_majFaite ? 'Opération et montant par défaut modifiés' : 'Opération modifiée');
   } else {
-    toast(`${libelleOperation(op, cat)} · ${euros(montant)}`, {
+    toast(`${libelleOperation(op, cat)} · ${euros(montant)}${alerte ? '\n' + alerte.texte : ''}`, {
       action: 'Annuler',
-      duree: 5000,
+      duree: alerte ? 6500 : 5000,
+      ton: alerte ? alerte.ton : null,
       surAction: async () => {
         await supprimerOperation(id);
         await compterUtilisation(op.categorie_id, -1);
@@ -256,4 +265,27 @@ export async function supprimerAvecAnnulation(id) {
     duree: 5000,
     surAction: async () => { await restaurerOperation(op); signalerChangement(); },
   });
+}
+
+/** Vérifie si la nouvelle dépense fait franchir 80 % ou 100 % du budget de sa catégorie */
+async function alerteBudget(op, cat) {
+  const budget = (await db.tous('budgets')).find(b => b.categorie_id === op.categorie_id);
+  if (!budget) return null;
+  const jourDebut = await db.parametre('jour_debut_mois', 1);
+  const per = periodeContenant(op.date, jourDebut);
+  const ops = await db.operationsEntre(per.debut, per.fin);
+  const apres = depensesParCategorie(ops, per)[op.categorie_id] || 0;
+  const avant = apres - op.montant_centimes;
+  const max = budget.montant_mensuel_centimes;
+  const seuil = franchissement(avant, apres, max);
+  const nom = cat ? cat.nom : 'cette catégorie';
+  if (seuil === 100) {
+    return apres > max
+      ? { ton: 'danger', texte: `Budget ${nom} dépassé : ${euros(apres)} sur ${euros(max)}` }
+      : { ton: 'danger', texte: `Budget ${nom} atteint : ${euros(apres)} sur ${euros(max)}` };
+  }
+  if (seuil === 80) {
+    return { ton: 'alerte', texte: `Attention : ${Math.round(apres * 100 / max)} % du budget ${nom} (${euros(apres)} sur ${euros(max)})` };
+  }
+  return null;
 }

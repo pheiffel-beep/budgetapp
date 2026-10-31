@@ -37,10 +37,11 @@ export function fermerPanneau() {
 
 // ---- Message court, avec bouton d'action facultatif (ex. « Annuler ») ----
 let minuterie = null;
-export function toast(message, { action = null, surAction = null, duree = 3000 } = {}) {
+export function toast(message, { action = null, surAction = null, duree = 3000, ton = null } = {}) {
   const el = document.getElementById('toast');
   clearTimeout(minuterie);
   el.innerHTML = `<span>${esc(message)}</span>${action ? `<button type="button">${esc(action)}</button>` : ''}`;
+  el.className = 'toast' + (ton ? ` toast-${ton}` : '');
   el.hidden = false;
   if (action) el.querySelector('button').onclick = () => { el.hidden = true; surAction && surAction(); };
   minuterie = setTimeout(() => { el.hidden = true; }, duree);

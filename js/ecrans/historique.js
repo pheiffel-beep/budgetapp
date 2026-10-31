@@ -9,11 +9,12 @@ import { htmlLigne, activerGestes } from '../ligne-operation.js';
 
 // Gardés entre deux visites de l'onglet
 let periode = null;
+let jourDebutCache = null;
 const filtres = { type: 'tous', categorie: '', compte: '', recherche: '' };
 
 export async function afficher(el) {
   const jourDebut = await db.parametre('jour_debut_mois', 1);
-  if (!periode) periode = periodeContenant(aujourdhui(), jourDebut);
+  if (!periode || jourDebutCache !== jourDebut) { periode = periodeContenant(aujourdhui(), jourDebut); jourDebutCache = jourDebut; }
   const cats = await categoriesParId();
   const comptes = await db.parametre('comptes', []);
   const listeCats = Object.values(cats).sort((a, b) => b.type.localeCompare(a.type) || a.ordre - b.ordre);

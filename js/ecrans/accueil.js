@@ -1,15 +1,42 @@
-// Écran Accueil.
-// Rappel de sauvegarde + phase 1 : emplacement du « reste à dépenser » (calcul en phase 3) + 5 dernières opérations.
+// Écran Accueil : « Combien me reste-t-il ce mois-ci ? »
+// Reste à dépenser, budgets proches de la limite, prochaines échéances, dernières opérations.
 
 import { db } from '../db.js';
+import { euros, eurosArrondis, aujourdhui, jjmm } from '../format.js';
+import { esc, pastille } from '../ui.js';
+import { periodeContenant, libelleDates } from '../dates.js';
 import { categoriesParId, triRecent } from '../operations.js';
 import { htmlLigne, activerGestes } from '../ligne-operation.js';
 import { rappelNecessaire, reporterRappel } from '../sauvegarde.js';
+import { resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances } from '../calculs.js';
+import { budgetsParCategorie, htmlBarre } from '../budgets.js';
+import { ouvrirRecalage } from '../recalage.js';
 
 export async function afficher(el) {
+  const auj = aujourdhui();
+  const jourDebut = await db.parametre('jour_debut_mois', 1);
+  const per = periodeContenant(auj, jourDebut);
   const cats = await categoriesParId();
-  const dernieres = (await db.tous('operations')).sort(triRecent).slice(0, 5);
+  const toutes = await db.tous('operations');
+  const recs = await db.tous('recurrents');
+  const budgets = await budgetsParCategorie();
   const rappel = await rappelNecessaire();
+  const ref = await db.parametre('recalage_ref', null);
+
+  const calc = resteADepenser(toutes, recs, auj, per);
+  const dernieres = [...toutes].sort(triRecent).slice(0, 5);
+  const depenses = depensesParCategorie(toutes, per);
+  const proches = Object.entries(budgets)
+    .map(([id, budget]) => ({ cat: cats[id], budget, dep: depenses[id] || 0 }))
+    .filter(x => x.cat)
+    .map(x => ({ ...x, st: statutBudget(x.dep, x.budget) }))
+    .sort((a, b) => b.st.ratio - a.st.ratio)
+    .slice(0, 3);
+  const echeances = prochainesEcheances(recs, auj, 31, 5);
+
+  const negatif = calc.reste < 0;
+  const epargne = calc.vers + calc.depuis > 0;
+  const v = calc.aVenir;
 
   el.innerHTML = `
     <h1>Accueil</h1>
@@ -30,10 +57,50 @@ export async function afficher(el) {
     </section>` : ''}
 
     <section class="carte reste" aria-label="Reste à dépenser">
-      <div class="muet">Reste à dépenser ce mois-ci</div>
-      <div class="montant">—</div>
-      <div class="muet petit">Le calcul arrive en phase 3</div>
+      <div class="muet">Reste à dépenser</div>
+      <div class="montant ${negatif ? 'negatif' : ''}">${euros(calc.reste)}</div>
+      <div class="${negatif ? 'negatif' : 'muet'}">${negatif
+        ? 'Tu as dépassé ce que tu avais ce mois-ci'
+        : calc.reste === 0 ? (calc.entrees ? 'Il ne reste rien à dépenser' : '')
+        : `soit ~${eurosArrondis(calc.parJour)}/jour jusqu'au ${jjmm(per.fin)}`}</div>
+      <div class="muet petit">${libelleDates(per)}</div>
+      ${epargne ? `<div class="muet petit">Épargne : ${euros(calc.vers)} mis de côté${calc.depuis ? `, ${euros(calc.depuis)} retiré` : ''}</div>` : ''}
+      ${calc.entrees === 0 ? '<div class="muet petit">Aucun revenu encodé sur cette période : le calcul part de 0 €.</div>' : ''}
+
+      <details class="calcul">
+        <summary>Voir le calcul</summary>
+        <ul class="liste">
+          <li>Revenus reçus <span class="ligne-val pos">+${euros(calc.entrees)}</span></li>
+          <li>Dépenses et charges déjà payées <span class="ligne-val">-${euros(calc.sorties)}</span></li>
+          <li>Charges fixes encore à venir <span class="ligne-val">-${euros(v.charges)}</span></li>
+          ${calc.vers + v.vers ? `<li>Virements vers épargne (passés et à venir) <span class="ligne-val">-${euros(calc.vers + v.vers)}</span></li>` : ''}
+          ${calc.depuis + v.depuis ? `<li>Virements depuis épargne <span class="ligne-val pos">+${euros(calc.depuis + v.depuis)}</span></li>` : ''}
+        </ul>
+        <p class="muet petit">Les revenus pas encore reçus ne sont pas comptés.</p>
+      </details>
+
+      <button type="button" class="btn btn-leger" id="a-recaler"><i data-lucide="scale"></i>Recaler avec mon solde réel</button>
+      ${ref ? `<div class="muet petit">Dernier recalage : ${jjmm(ref.date)}</div>` : ''}
     </section>
+
+    ${proches.length ? `
+    <h2>Budgets</h2>
+    <section class="carte carte-liste"><ul class="liste">
+      ${proches.map(x => `<li class="ligne-budget"><span class="ligne-btn-faux">
+        ${pastille(x.cat)}
+        <span class="op-texte"><span class="op-titre">${esc(x.cat.nom)}</span>
+          ${htmlBarre(x.dep, x.budget, x.st, esc(x.cat.nom))}
+          <span class="op-sous">${euros(x.dep)} sur ${euros(x.budget)}</span></span>
+        <span class="pct ${x.st.couleur}">${Math.round(x.st.ratio * 100)} %</span></span></li>`).join('')}
+    </ul></section>` : ''}
+
+    ${echeances.length ? `
+    <h2>Prochaines échéances</h2>
+    <section class="carte carte-liste"><ul class="liste">
+      ${echeances.map(e => `<li><span class="op-texte"><span class="op-titre">${esc(e.libelle)}</span>
+        <span class="op-sous">${jjmm(e.date)}${e.type === 'virement' ? ' · virement' : ''}</span></span>
+        <span class="ligne-val ${e.type === 'entree' ? 'pos' : ''}">${e.type === 'entree' ? '+' : ''}${euros(e.montant)}</span></li>`).join('')}
+    </ul></section>` : ''}
 
     <h2>Dernières opérations</h2>
     ${dernieres.length ? `
@@ -45,6 +112,8 @@ export async function afficher(el) {
       <button type="button" class="btn" id="a-tout">Voir tout l'historique</button>` : `
       <div class="vide"><i data-lucide="circle-plus"></i>
         <p>Rien d'encodé pour l'instant.<br>Touche le bouton « + » pour ajouter une dépense.</p></div>`}`;
+
+  el.querySelector('#a-recaler').onclick = ouvrirRecalage;
 
   if (rappel) {
     el.querySelector('#a-sauver').onclick = () =>
