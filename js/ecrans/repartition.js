@@ -6,6 +6,7 @@ import { db } from '../db.js';
 import { euros, aujourdhui, jjmm } from '../format.js';
 import { esc, icones } from '../ui.js';
 import { periodeContenant, decalerPeriode, libelleDates } from '../dates.js';
+import { ouvrirFiche } from './fiche-categorie.js';
 import { depensesParCategorie, coupurePrecedente, comparerCategories, sommeDepenses } from '../calculs.js';
 
 let periode = null;
@@ -38,14 +39,14 @@ export async function afficher(el) {
     const part = total ? Math.round(l.montant * 100 / total) : 0;
     const compar = totalAvant || l.prec
       ? `<span class="ecart ${classeEcart(l.ecart)}">${l.ecart === 0 ? 'inchangé' : signe(l.ecart)}</span>` : '';
-    return `<li class="rep-ligne">
+    return `<li class="rep-ligne-li"><button type="button" class="rep-ligne" data-fiche="${esc(l.id)}" aria-label="${esc(cat.nom)} : ${euros(l.montant)}. Toucher pour voir le détail.">
       <span class="pastille" style="background:${esc(cat.couleur)}" aria-hidden="true"><i data-lucide="${esc(cat.icone)}"></i></span>
       <span class="rep-corps">
         <span class="rep-titre"><span class="op-titre">${esc(cat.nom)}</span><strong>${euros(l.montant)}</strong></span>
         <span class="barre" role="img" aria-label="${esc(cat.nom)} : ${part} % des dépenses">
           <span class="barre-remplie" style="width:${Math.max(2, l.montant * 100 / max)}%;background:${esc(cat.couleur)}"></span></span>
         <span class="rep-sous"><span class="op-sous">${part} % du total</span>${compar}</span>
-      </span></li>`;
+      </span><i data-lucide="chevron-right" class="rep-chevron" aria-hidden="true"></i></button></li>`;
   };
 
   const groupe = (titre, liste) => {
@@ -90,6 +91,10 @@ export async function afficher(el) {
       : '<div class="vide"><i data-lucide="chart-pie"></i><p>Aucune dépense sur cette période.</p></div>'}`;
 
   el.querySelector('#r-retour').onclick = () => window.dispatchEvent(new CustomEvent('naviguer', { detail: 'accueil' }));
+  el.querySelectorAll('[data-fiche]').forEach(b => b.onclick = () => {
+    const id = Number(b.dataset.fiche);
+    if (cats[String(id)]) ouvrirFiche(id, { date: periode.debut, retour: 'repartition' });
+  });
   el.querySelector('#r-prec').onclick = async () => { periode = prec; await afficher(el); icones(); };
   el.querySelector('#r-suiv').onclick = async () => { periode = decalerPeriode(periode, 1, jourDebut); await afficher(el); icones(); };
 }

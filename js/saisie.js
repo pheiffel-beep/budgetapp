@@ -9,6 +9,7 @@ import {
   enregistrerOperation, supprimerOperation, restaurerOperation, compterUtilisation,
   signalerChangement, libelleOperation,
 } from './operations.js';
+import { ouvrirFiche } from './ecrans/fiche-categorie.js';
 
 const MAX_ENTIERS = 7;
 
@@ -166,10 +167,22 @@ function dessiner() {
       <div class="barre-enregistrer">
         <button type="button" class="btn btn-principal" id="s-enregistrer">Enregistrer</button>
       </div>`}
+    ${lienFiche()}
     ${s.edition ? `<button type="button" class="btn btn-danger" id="s-supprimer">Supprimer</button>` : ''}
   `;
   icones();
   brancher(el);
+}
+
+// En modification : lien vers la fiche de la catégorie d'origine (ex. « Tout voir pour Padel »)
+function catOrigine() {
+  const o = s.original;
+  if (!s.edition || !o || o.type === 'virement' || o.categorie_id == null) return null;
+  return s.categories.find(c => c.id === o.categorie_id) || null;
+}
+function lienFiche() {
+  const c = catOrigine();
+  return c ? `<button type="button" class="btn btn-leger" id="s-fiche"><i data-lucide="chart-column"></i>Tout voir pour ${esc(c.nom)}</button>` : '';
 }
 
 function brancher(el) {
@@ -196,6 +209,11 @@ function brancher(el) {
   el.querySelector('#s-enregistrer')?.addEventListener('click', valider);
   el.querySelector('#s-maj')?.addEventListener('change', e => { s.majDefaut = e.target.checked; });
   el.querySelector('#s-supprimer')?.addEventListener('click', supprimer);
+  el.querySelector('#s-fiche')?.addEventListener('click', () => {
+    const o = s.original;
+    fermer();
+    ouvrirFiche(o.categorie_id, { date: o.date });
+  });
 }
 
 function lireOptions() {

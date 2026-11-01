@@ -496,3 +496,25 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 input[type="text"], input[type="date"], input[type="search"], select, textarea {
   font-size: max(16px, 1rem);                                 /* sous 16 px, iOS zoome sur le champ et décale la page */
 }
+
+/* =====================================================
+   v0.11 : fiche d'une catégorie (mois par mois, année par année)
+   ===================================================== */
+button.rep-ligne { width: 100%; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; align-items: center; }
+.rep-chevron { width: 18px; height: 18px; color: var(--texte-2); flex-shrink: 0; }
+.fiche-titre { display: flex; align-items: center; gap: .6rem; min-width: 0; }
+.fiche-titre > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.graphe { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; align-items: end; height: 170px; }
+.graphe-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0;
+  border: none; background: none; color: var(--texte-2); padding: 0; cursor: pointer; border-radius: 8px; }
+.graphe-valeur { font-size: .58rem; line-height: 1.1; min-height: 1.3em; white-space: nowrap; font-variant-numeric: tabular-nums; opacity: 0; }
+.graphe-col.choisi .graphe-valeur { opacity: 1; color: var(--texte); font-weight: 700; font-size: .66rem; }
+.graphe-piste { flex: 1; width: 70%; max-width: 22px; display: flex; align-items: flex-end; border-radius: 6px; background: var(--surface-2); box-shadow: var(--barre-creux); overflow: hidden; }
+.graphe-barre { display: block; width: 100%; border-radius: 6px; background-image: var(--barre-gloss); opacity: .55; transition: height .25s; }
+.graphe-col.choisi .graphe-barre { opacity: 1; }
+.graphe-col.choisi .graphe-piste { outline: 2px solid var(--accent); outline-offset: 2px; }
+.graphe-col.futur { opacity: .4; }
+.graphe-mois { font-size: .62rem; white-space: nowrap; }
+.graphe-col.choisi .graphe-mois { color: var(--accent); font-weight: 700; }
+.annee-total { margin-left: auto; font-variant-numeric: tabular-nums; }
+.ligne-btn > button[aria-current="true"] .op-titre { color: var(--accent); font-weight: 700; }

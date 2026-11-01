@@ -5,6 +5,8 @@ import { euros, dateFR } from './format.js';
 import { esc, pastille, ouvrirPanneau, fermerPanneau } from './ui.js';
 import { libelleOperation, montantSigne } from './operations.js';
 import { ouvrirSaisie, supprimerAvecAnnulation } from './saisie.js';
+import { ouvrirFiche } from './ecrans/fiche-categorie.js';
+import { db } from './db.js';
 
 const ICONE_VIREMENT = { icone: 'arrow-left-right', couleur: '#8c95a6' };
 
@@ -79,15 +81,19 @@ export function activerGestes(liste, operations) {
   });
 }
 
-function menu(op) {
+async function menu(op) {
+  const cat = op.type !== 'virement' && op.categorie_id != null ? await db.lire('categories', op.categorie_id) : null;
   ouvrirPanneau(`
     <h2 class="titre-panneau">Opération</h2>
     <div class="pile">
       <button type="button" class="btn" id="m-modifier"><i data-lucide="pencil"></i>Modifier</button>
+      ${cat ? `<button type="button" class="btn" id="m-fiche"><i data-lucide="chart-column"></i>Tout voir pour ${esc(cat.nom)}</button>` : ''}
       <button type="button" class="btn btn-danger" id="m-supprimer"><i data-lucide="trash-2"></i>Supprimer</button>
       <button type="button" class="btn" id="m-fermer">Fermer</button>
     </div>`);
   document.getElementById('m-modifier').onclick = () => { fermerPanneau(); ouvrirSaisie(op); };
   document.getElementById('m-supprimer').onclick = () => { fermerPanneau(); supprimerAvecAnnulation(op.id); };
   document.getElementById('m-fermer').onclick = fermerPanneau;
+  const bf = document.getElementById('m-fiche');
+  if (bf) bf.onclick = () => { fermerPanneau(); ouvrirFiche(op.categorie_id, { date: op.date }); };
 }

@@ -12,14 +12,15 @@ import * as recurrents from './ecrans/recurrents.js';
 import * as repartition from './ecrans/repartition.js';
 import * as categories from './ecrans/categories.js';
 import * as journalEcran from './ecrans/journal.js';
+import * as fiche from './ecrans/fiche-categorie.js';
 import { journal, installerCapteurs } from './journal.js';
 import { initialiserVerrou } from './verrou.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.10 — reflets';
+export const VERSION = '0.11 — fiches catégories';
 
-const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran };
+const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran, fiche };
 // Sous-écrans : quel onglet reste allumé
 const ONGLET_PARENT = { recurrents: 'reglages', repartition: 'accueil', categories: 'reglages', journal: 'reglages' };
 let ongletActuel = 'accueil';
@@ -40,7 +41,8 @@ requeteSombre.addEventListener('change', () => appliquerTheme());
 export async function afficher(nom, { garderDefilement = false } = {}) {
   ongletActuel = nom;
   document.querySelectorAll('.onglets button').forEach(b => {
-    if (b.dataset.onglet === (ONGLET_PARENT[nom] || nom)) b.setAttribute('aria-current', 'page');
+    const parent = ECRANS[nom].ongletParent ? ECRANS[nom].ongletParent() : (ONGLET_PARENT[nom] || nom);
+    if (b.dataset.onglet === parent) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
   const conteneur = document.getElementById('ecran');
