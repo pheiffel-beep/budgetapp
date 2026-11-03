@@ -8,10 +8,11 @@ import { periodeContenant, libelleDates } from '../dates.js';
 import { categoriesParId, triRecent } from '../operations.js';
 import { htmlLigne, activerGestes } from '../ligne-operation.js';
 import { rappelNecessaire, reporterRappel } from '../sauvegarde.js';
-import { resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances, joursSansSaisie, echeancesAVenir } from '../calculs.js';
+import { epargneNette, resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances, joursSansSaisie, echeancesAVenir } from '../calculs.js';
 import { budgetsParCategorie, htmlBarre } from '../budgets.js';
 import { ouvrirRecalage } from '../recalage.js';
 import { ouvrirSaisie } from '../saisie.js';
+import { ouvrirEpargne } from './epargne.js';
 
 const JOURS_RAPPEL_SAISIE = 3;
 const redessiner = el => afficher(el).then(icones);
@@ -57,7 +58,7 @@ export async function afficher(el) {
     : `<li><span>${titre}</span><span class="ligne-val ${classe}">${signe}${euros(total)}</span></li>`;
 
   const negatif = calc.reste < 0;
-  const epargne = calc.vers + calc.depuis > 0;
+  const ep = epargneNette(toutes, per);
   const v = calc.aVenir;
 
   el.innerHTML = `
@@ -99,7 +100,8 @@ export async function afficher(el) {
         : calc.reste === 0 ? (calc.entrees ? 'Il ne reste rien à dépenser' : '')
         : `soit ~${eurosArrondis(calc.parJour)}/jour jusqu'au ${jjmm(per.fin)}`}</div>
       <div class="muet petit">${libelleDates(per)}</div>
-      ${epargne ? `<div class="muet petit">Épargne : ${euros(calc.vers)} mis de côté${calc.depuis ? `, ${euros(calc.depuis)} retiré` : ''}</div>` : ''}
+      <button type="button" class="ligne-epargne" id="a-epargne" aria-label="Épargne du mois : ${euros(ep.net)}. Toucher pour voir le détail.">
+        Épargne du mois : <strong>${ep.net > 0 ? '+' : ''}${euros(ep.net)}</strong><i data-lucide="chevron-right" aria-hidden="true"></i></button>
       ${calc.entrees === 0 ? '<div class="muet petit">Aucun revenu encodé sur cette période : le calcul part de 0 €.</div>' : ''}
 
       <details class="calcul">
@@ -158,6 +160,7 @@ export async function afficher(el) {
         <p>Rien d'encodé pour l'instant.<br>Touche le bouton « + » pour ajouter une dépense.</p></div>`}`;
 
   el.querySelector('#a-recaler').onclick = ouvrirRecalage;
+  el.querySelector('#a-epargne').onclick = () => ouvrirEpargne({ date: per.debut, retour: 'accueil' });
   el.querySelector('#a-repartition').onclick = () =>
     window.dispatchEvent(new CustomEvent('naviguer', { detail: 'repartition' }));
   if (sansSaisie >= JOURS_RAPPEL_SAISIE) {

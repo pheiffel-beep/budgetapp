@@ -75,9 +75,14 @@ async function dessinerListe(el, cats) {
 
   // Résumé du mois (sur les opérations filtrées)
   const somme = t => ops.filter(o => o.type === t).reduce((s, o) => s + o.montant_centimes, 0);
+  const versEp = ops.filter(o => o.type === 'virement' && o.sens_virement !== 'depuis_epargne').reduce((s, o) => s + o.montant_centimes, 0);
+  const depuisEp = ops.filter(o => o.type === 'virement' && o.sens_virement === 'depuis_epargne').reduce((s, o) => s + o.montant_centimes, 0);
+  const netEp = versEp - depuisEp;
+  const virements = ops.some(o => o.type === 'virement');
   el.querySelector('#h-resume').innerHTML = ops.length ? `
     <span>Entrées <strong class="pos">+${euros(somme('entree'))}</strong></span>
-    <span>Sorties <strong>${euros(-somme('sortie'))}</strong></span>` : '';
+    <span>Sorties <strong>${euros(-somme('sortie'))}</strong></span>
+    ${virements ? `<span>Épargne <strong>${netEp > 0 ? '+' : ''}${euros(netEp)}</strong></span>` : ''}` : '';
 
   const zone = el.querySelector('#h-liste');
   if (!ops.length) {

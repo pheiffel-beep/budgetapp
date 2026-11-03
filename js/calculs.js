@@ -32,6 +32,15 @@ export function totauxPeriode(ops, per) {
 }
 
 /**
+ * Épargne réellement bougée sur la période (virements saisis ou déjà générés, pas ceux à venir) :
+ * vers = mis de côté, depuis = retiré, net = vers − depuis (négatif si on a plus retiré que versé).
+ */
+export function epargneNette(ops, per) {
+  const t = totauxPeriode(ops, per);
+  return { vers: t.vers, depuis: t.depuis, net: t.vers - t.depuis };
+}
+
+/**
  * Détail des échéances encore à venir dans la période (strictement après aujourd'hui), triées par date.
  * Les charges trimestrielles et annuelles sont comprises dès qu'elles tombent dans la période.
  * Les revenus ne sont pas comptés.

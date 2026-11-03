@@ -25,7 +25,7 @@
     import { euros, versCentimes } from './js/format.js';
     import { lireSauvegarde, ecartJours, nomFichier, FORMAT, VERSION_FORMAT } from './js/sauvegarde.js';
     import {
-      totauxPeriode, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
+      totauxPeriode, epargneNette, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
       franchissement, prochainesEcheances, soldeAttendu,
       coupurePrecedente, comparerCategories, sommeDepenses, joursSansSaisie,
     } from './js/calculs.js';
@@ -175,6 +175,16 @@
       resteADepenser([op('virement', 5000, '2026-10-02', { sens_virement: 'depuis_epargne' })], [], '2026-10-15', oct).reste, 5000);
     t('Virement vers épargne baisse le reste',
       resteADepenser([op('virement', 5000, '2026-10-02', { sens_virement: 'vers_epargne' })], [], '2026-10-15', oct).reste, -5000);
+    // --- Épargne du mois (virements réellement faits) ---
+    const vir = [op('virement', 51000, '2026-10-05', { sens_virement: 'vers_epargne' }),
+                 op('virement', 20000, '2026-10-20', { sens_virement: 'depuis_epargne' }),
+                 op('virement', 9900, '2026-09-30', { sens_virement: 'vers_epargne' }),
+                 op('sortie', 7000, '2026-10-06')];
+    t('Épargne du mois : versé, retiré, net', epargneNette(vir, oct), { vers: 51000, depuis: 20000, net: 31000 });
+    t('Épargne du mois : un mois sans virement vaut 0', epargneNette(vir, { debut: '2026-08-01', fin: '2026-08-31' }).net, 0);
+    t('Épargne du mois : négative si on retire plus qu\'on verse',
+      epargneNette([op('virement', 5000, '2026-10-02', { sens_virement: 'vers_epargne' }), op('virement', 12000, '2026-10-03', { sens_virement: 'depuis_epargne' })], oct).net, -7000);
+    t('Épargne du mois : les dépenses ne comptent pas', epargneNette([op('sortie', 7000, '2026-10-06')], oct).net, 0);
     t('Période commençant le 25 : opérations du 24/10 exclues, du 25/10 incluses',
       totauxPeriode([op('sortie', 100, '2026-10-24'), op('sortie', 200, '2026-10-25')], { debut: '2026-10-25', fin: '2026-11-24' }).sorties, 200);
     t('Période pas encore commencée : à venir compté depuis son début',
