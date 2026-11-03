@@ -19,7 +19,7 @@ import { initialiserVerrou } from './verrou.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.12 — épargne du mois';
+export const VERSION = '0.13 — clair soigné';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran, fiche, epargne };
 // Sous-écrans : quel onglet reste allumé
@@ -30,7 +30,7 @@ let ongletActuel = 'accueil';
 const requeteSombre = window.matchMedia('(prefers-color-scheme: dark)');
 
 export async function appliquerTheme(choix) {
-  const theme = choix ?? await db.parametre('theme', 'sombre');
+  const theme = choix ?? await db.parametre('theme', 'clair');
   const effectif = theme === 'auto' ? (requeteSombre.matches ? 'sombre' : 'clair') : theme;
   document.documentElement.dataset.theme = effectif;
   document.querySelector('meta[name="theme-color"]')

@@ -525,3 +525,41 @@ button.rep-ligne { width: 100%; border: none; background: none; color: inherit; 
 .ligne-epargne strong { color: var(--texte); font-variant-numeric: tabular-nums; }
 .ligne-epargne svg.lucide { width: 16px; height: 16px; }
 .resume { flex-wrap: wrap; gap: .25rem .75rem; }
+
+/* =====================================================
+   v0.13 : thème clair soigné (devient le thème par défaut)
+   Plus de relief : cartes qui flottent, carte « reste » satinée, barre du bas détachée,
+   boutons secondaires en relief doux. Le thème sombre n'est pas touché.
+   ===================================================== */
+[data-theme="clair"] body::before { background: radial-gradient(120% 50% at 15% 0%, #ffffff 0%, rgba(247,243,236,0) 62%), radial-gradient(90% 40% at 100% 0%, rgba(107,75,209,.07) 0%, rgba(247,243,236,0) 70%); }
+[data-theme="clair"] .carte, [data-theme="clair"] .panneau {
+  background: linear-gradient(180deg, #ffffff 0%, #fcf9f4 100%);
+  border-color: #e4dccd;
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(70,50,110,.08), 0 10px 24px rgba(70,50,110,.10);
+}
+[data-theme="clair"] .reste {
+  background: linear-gradient(165deg, #e6dcfb 0%, #f1ebfc 48%, #fffdf9 100%);
+  border-color: #b9a8ee;
+  box-shadow: inset 0 1px 0 #ffffff, inset 0 -1px 0 rgba(107,75,209,.12), 0 2px 4px rgba(107,75,209,.10), 0 14px 30px rgba(107,75,209,.16);
+}
+[data-theme="clair"] .onglets {
+  background: linear-gradient(180deg, #ffffff, #f6f1e8);
+  border-top: 1px solid #e4dccd;
+  box-shadow: inset 0 1px 0 #ffffff, 0 -8px 22px rgba(70,50,110,.10);
+}
+[data-theme="clair"] .btn:not(.btn-principal):not(.btn-danger):not(.btn-danger-plein) {
+  background: linear-gradient(180deg, #ffffff 0%, #f1ebe0 100%);
+  border: 1px solid #ddd5c6;
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(70,50,110,.10);
+}
+[data-theme="clair"] .btn-leger { background: linear-gradient(180deg, #ffffff 0%, #f6f1e8 100%); }
+[data-theme="clair"] .pastille { box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 3px 8px rgba(70,50,110,.22); }
+[data-theme="clair"] .barre { background: #e9e2d4; box-shadow: inset 0 1px 3px rgba(70,50,110,.22); }
+[data-theme="clair"] .graphe-piste { background: #ece5d8; }
+[data-theme="clair"] .pave button, [data-theme="clair"] .cat-btn {
+  background: linear-gradient(180deg, #ffffff 0%, #f1ebe0 100%);
+  box-shadow: inset 0 1px 0 #ffffff, 0 2px 0 rgba(120,100,70,.14), 0 3px 6px rgba(70,50,110,.08);
+}
+[data-theme="clair"] .cat-btn[aria-pressed="true"] { background: linear-gradient(180deg, #f3edff 0%, #e6dcfb 100%); }
+[data-theme="clair"] .segment { background: #ece5d8; box-shadow: inset 0 1px 3px rgba(70,50,110,.18); }
+[data-theme="clair"] .segment button[aria-pressed="true"] { background: linear-gradient(180deg, #ffffff 0%, #f6f1e8 100%); box-shadow: 0 1px 3px rgba(70,50,110,.25), inset 0 1px 0 #fff; }

@@ -23,7 +23,7 @@ const THEMES = [
 ];
 
 export async function afficher(el) {
-  const actuel = await db.parametre('theme', 'sombre');
+  const actuel = await db.parametre('theme', 'clair');
   const jourDebut = await db.parametre('jour_debut_mois', 1);
   const saisieRapide = !!(await db.parametre('saisie_rapide', false));
   const code = await codeActif();

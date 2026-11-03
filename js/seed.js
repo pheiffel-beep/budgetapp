@@ -61,7 +61,7 @@ async function donneesV1() {
 
   // Paramètres par défaut
   await db.definirParametre('jour_debut_mois', 1);
-  await db.definirParametre('theme', 'sombre');
+  await db.definirParametre('theme', 'clair');
   await db.definirParametre('comptes', ['Courant', 'Épargne', 'Espèces']);
   await db.definirParametre('code_verrouillage', null);
   await db.definirParametre('date_derniere_sauvegarde', null);
