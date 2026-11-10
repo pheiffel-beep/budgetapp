@@ -275,3 +275,40 @@ export function projectionObjectif({ actuel, cible, rythme, auj, dateVoulue = nu
   }
   return { reste, pct, atteint, moisRestants, dateEstimee, effortMensuel };
 }
+
+// ---------- Jauge du reste à dépenser (« barre de vie » de l'accueil) ----------
+export const SEUILS_RESTE = { orange: 10000, rouge: 5000 };   // 100 € et 50 € par défaut, réglables
+
+/**
+ * Jauge de la période :
+ *   plein  = ce qui est réellement disponible pour vivre : revenus reçus − charges fixes (payées ou à venir)
+ *            − épargne nette (passée et à venir)
+ *   reste  = le reste à dépenser ; part = reste / plein (0 à 1) : la barre se vide au fil des dépenses
+ *   repere = part de la période encore devant soi (0 à 1) : barre plus longue que le repère = on tient le rythme
+ *   couleur : vert, orange sous le seuil orange, rouge sous le seuil rouge ou en négatif
+ * Renvoie null tant qu'aucun revenu n'est encodé sur la période (rien à mesurer).
+ */
+export function jaugeReste(ops, recs, auj, per, seuils = SEUILS_RESTE) {
+  const calc = resteADepenser(ops, recs, auj, per);
+  if (!(calc.entrees > 0)) return null;
+  let fixesPayees = 0;
+  for (const o of ops) {
+    if (o.type === 'sortie' && o.recurrent_id != null && dans(o.date, per)) fixesPayees += o.montant_centimes;
+  }
+  const v = calc.aVenir;
+  const plein = calc.entrees - fixesPayees - v.charges - calc.vers + calc.depuis - v.vers + v.depuis;
+  if (!(plein > 0)) return null;
+  const part = Math.max(0, Math.min(1, calc.reste / plein));
+  const total = ecartJours(per.debut, per.fin) + 1;
+  const ecoules = auj < per.debut ? 0 : auj > per.fin ? total : ecartJours(per.debut, auj);
+  const repere = Math.max(0, Math.min(1, 1 - ecoules / total));
+  const couleur = calc.reste < seuils.rouge ? 'rouge' : calc.reste < seuils.orange ? 'orange' : 'vert';
+  return { plein, reste: calc.reste, part, repere, couleur };
+}
+
+/** Seuil franchi quand le reste passe de `avant` à `apres` : 'rouge', 'orange' ou null (le plus grave l'emporte) */
+export function franchissementReste(avant, apres, seuils = SEUILS_RESTE) {
+  if (avant >= seuils.rouge && apres < seuils.rouge) return 'rouge';
+  if (avant >= seuils.orange && apres < seuils.orange) return 'orange';
+  return null;
+}

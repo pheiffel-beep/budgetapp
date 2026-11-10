@@ -3,7 +3,8 @@
 
 import { db } from '../db.js';
 import { appliquerTheme, VERSION } from '../app.js';
-import { dateFR, aujourdhui } from '../format.js';
+import { dateFR, aujourdhui, euros, versCentimes } from '../format.js';
+import { SEUILS_RESTE } from '../calculs.js';
 import { toast, ouvrirPanneau, fermerPanneau, esc, icones } from '../ui.js';
 import { journal } from '../journal.js';
 import {
@@ -27,6 +28,9 @@ export async function afficher(el) {
   const actuel = await db.parametre('theme', 'clair');
   const jourDebut = await db.parametre('jour_debut_mois', 1);
   const saisieRapide = !!(await db.parametre('saisie_rapide', false));
+  const seuilOrange = await db.parametre('seuil_orange', SEUILS_RESTE.orange);
+  const seuilRouge = await db.parametre('seuil_rouge', SEUILS_RESTE.rouge);
+  const sansEuro = c => euros(c).replace(/\s?€$/, '').replace(/[\s\u202f\u00a0]/g, '').replace(/,00$/, '');
   const code = await codeActif();
   const delaiVerrou = await db.parametre('delai_verrou', 60);
   const nbErreurs = (await db.journalTous()).filter(e => e.niveau === 'erreur').length;
@@ -70,6 +74,17 @@ export async function afficher(el) {
         </select></label>
       <p class="muet petit aide">Si tu es payé vers le 25, choisis ce jour : ta période ira par exemple du 25 au 24
         du mois suivant, et le « reste à dépenser » repartira à zéro à chaque salaire.</p>
+    </section>
+
+    <h2>Reste à dépenser</h2>
+    <section class="carte">
+      <label class="champ">La barre passe à l'orange sous (€)
+        <input type="text" id="g-seuil-orange" inputmode="decimal" autocomplete="off" value="${sansEuro(seuilOrange)}"></label>
+      <label class="champ">Elle passe au rouge sous (€)
+        <input type="text" id="g-seuil-rouge" inputmode="decimal" autocomplete="off" value="${sansEuro(seuilRouge)}"></label>
+      <p class="muet petit aide">Sur l'accueil, la barre sous le « reste à dépenser » se vide au fil des dépenses et change
+        de couleur sous ces montants. Un message te prévient quand une dépense te fait passer dessous.
+        Le petit trait sur la barre montre où en est le mois.</p>
     </section>
 
     <h2>Sauvegarde</h2>
@@ -137,6 +152,20 @@ export async function afficher(el) {
     await db.definirParametre('saisie_rapide', e.target.checked);
     toast(e.target.checked ? 'Enregistrement rapide activé' : 'Enregistrement rapide désactivé');
   };
+
+  const seuil = (id, cle, autre, plusGrand) => el.querySelector(id).onchange = async e => {
+    const c = versCentimes(e.target.value.trim());
+    const a = versCentimes(el.querySelector(autre).value.trim());
+    if (c == null || (a != null && (plusGrand ? c < a : c > a))) {
+      toast(c == null ? 'Montant invalide (ex. 100)' : 'Le seuil orange doit être au-dessus du seuil rouge');
+      e.target.value = sansEuro(await db.parametre(cle, SEUILS_RESTE[plusGrand ? 'orange' : 'rouge']));
+      return;
+    }
+    await db.definirParametre(cle, c);
+    toast('Seuil enregistré');
+  };
+  seuil('#g-seuil-orange', 'seuil_orange', '#g-seuil-rouge', true);
+  seuil('#g-seuil-rouge', 'seuil_rouge', '#g-seuil-orange', false);
 
   el.querySelector('#g-jour').onchange = async e => {
     await db.definirParametre('jour_debut_mois', Number(e.target.value));

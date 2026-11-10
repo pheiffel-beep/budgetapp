@@ -8,7 +8,7 @@ import { periodeContenant, libelleDates } from '../dates.js';
 import { categoriesParId, triRecent } from '../operations.js';
 import { htmlLigne, activerGestes } from '../ligne-operation.js';
 import { rappelNecessaire, reporterRappel } from '../sauvegarde.js';
-import { epargneNette, resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances, joursSansSaisie, echeancesAVenir } from '../calculs.js';
+import { epargneNette, resteADepenser, depensesParCategorie, statutBudget, prochainesEcheances, joursSansSaisie, echeancesAVenir, jaugeReste, SEUILS_RESTE } from '../calculs.js';
 import { budgetsParCategorie, htmlBarre } from '../budgets.js';
 import { ouvrirRecalage } from '../recalage.js';
 import { ouvrirSaisie } from '../saisie.js';
@@ -58,6 +58,8 @@ export async function afficher(el) {
          <ul class="liste sous-liste">${lignes}</ul></details></li>`
     : `<li><span>${titre}</span><span class="ligne-val ${classe}">${signe}${euros(total)}</span></li>`;
 
+  const seuils = { orange: await db.parametre('seuil_orange', SEUILS_RESTE.orange), rouge: await db.parametre('seuil_rouge', SEUILS_RESTE.rouge) };
+  const jauge = jaugeReste(toutes, recs, auj, per, seuils);
   const negatif = calc.reste < 0;
   const ep = epargneNette(toutes, per);
   const v = calc.aVenir;
@@ -96,6 +98,11 @@ export async function afficher(el) {
     <section class="carte reste" aria-label="Reste à dépenser">
       <div class="muet">Reste à dépenser</div>
       <div class="montant ${negatif ? 'negatif' : ''}">${euros(calc.reste)}</div>
+      ${jauge ? `
+      <div class="jauge" role="img" aria-label="Il reste ${Math.round(jauge.part * 100)} % de ce que tu avais pour la période ; il reste ${Math.round(jauge.repere * 100)} % du mois.">
+        <span class="jauge-remplie ${jauge.couleur}" style="width:${(jauge.part * 100).toFixed(1)}%"></span>
+        <span class="jauge-repere" style="left:${(jauge.repere * 100).toFixed(1)}%"></span>
+      </div>` : ''}
       <div class="${negatif ? 'negatif' : 'muet'}">${negatif
         ? 'Tu as dépassé ce que tu avais ce mois-ci'
         : calc.reste === 0 ? (calc.entrees ? 'Il ne reste rien à dépenser' : '')

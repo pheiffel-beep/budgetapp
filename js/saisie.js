@@ -3,7 +3,7 @@
 import { db } from './db.js';
 import { euros, aujourdhui } from './format.js';
 import { periodeContenant } from './dates.js';
-import { franchissement, depensesParCategorie } from './calculs.js';
+import { franchissement, depensesParCategorie, resteADepenser, franchissementReste, SEUILS_RESTE } from './calculs.js';
 import { ouvrirPanneau, fermerPanneau, toast, esc, pastille, icones } from './ui.js';
 import {
   enregistrerOperation, supprimerOperation, restaurerOperation, compterUtilisation,
@@ -161,7 +161,7 @@ function dessiner() {
       <div class="grille-cat" role="group" aria-label="Catégorie">
         ${categoriesAffichees().map(c => `
           <button type="button" class="cat-btn" data-cat="${c.id}" aria-pressed="${c.id === s.categorie_id}">
-            ${pastille(c)}<span>${esc(c.nom)}</span>
+            ${pastille(c)}<span>${esc(c.nom).replace(/\//g, '/&#8203;')}</span>
           </button>`).join('')}
       </div>`}
 
@@ -284,6 +284,8 @@ async function valider() {
   let alerte = null;
   if (!edition && op.type === 'sortie' && op.categorie_id != null) {
     alerte = await alerteBudget(op, cat);
+    const bas = await alerteReste(op);
+    if (bas) alerte = alerte ? { ton: 'danger', texte: `${alerte.texte}\n${bas.texte}` } : bas;
   }
 
   if (edition) {
@@ -340,4 +342,20 @@ async function alerteBudget(op, cat) {
     return { ton: 'alerte', texte: `Attention : ${Math.round(apres * 100 / max)} % du budget ${nom} (${euros(apres)} sur ${euros(max)})` };
   }
   return null;
+}
+
+/** Vérifie si la nouvelle dépense fait passer le reste à dépenser sous le seuil orange ou rouge (réglables) */
+async function alerteReste(op) {
+  const auj = aujourdhui();
+  const jourDebut = await db.parametre('jour_debut_mois', 1);
+  const per = periodeContenant(auj, jourDebut);
+  if (op.date < per.debut || op.date > per.fin) return null;
+  const seuils = { orange: await db.parametre('seuil_orange', SEUILS_RESTE.orange), rouge: await db.parametre('seuil_rouge', SEUILS_RESTE.rouge) };
+  const calc = resteADepenser(await db.tous('operations'), await db.tous('recurrents'), auj, per);
+  if (!(calc.entrees > 0)) return null;
+  const seuil = franchissementReste(calc.reste + op.montant_centimes, calc.reste, seuils);
+  if (!seuil) return null;
+  return seuil === 'rouge'
+    ? { ton: 'danger', texte: `Reste à dépenser : ${euros(calc.reste)} (sous ${euros(seuils.rouge)})` }
+    : { ton: 'alerte', texte: `Reste à dépenser : ${euros(calc.reste)} (sous ${euros(seuils.orange)})` };
 }

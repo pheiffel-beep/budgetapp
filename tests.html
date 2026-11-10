@@ -25,7 +25,7 @@
     import { euros, versCentimes } from './js/format.js';
     import { lireSauvegarde, ecartJours, nomFichier, FORMAT, VERSION_FORMAT } from './js/sauvegarde.js';
     import {
-      totauxPeriode, epargneNette, etatPoche, virementsDePoche, chargesFixes, projectionObjectif, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
+      totauxPeriode, epargneNette, etatPoche, virementsDePoche, chargesFixes, projectionObjectif, jaugeReste, franchissementReste, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
       franchissement, prochainesEcheances, soldeAttendu,
       coupurePrecedente, comparerCategories, sommeDepenses, joursSansSaisie,
     } from './js/calculs.js';
@@ -235,6 +235,23 @@
       { reste: 0, pct: 100, atteint: true, moisRestants: null, dateEstimee: null, effortMensuel: null });
     t('Objectif : 99,9 % reste affiché 99 % (jamais 100 % avant d\'y être)',
       projectionObjectif({ actuel: 4999900, cible: 5000000, rythme: 0, auj: '2026-11-10' }).pct, 99);
+
+    // --- Jauge du reste à dépenser ---
+    const nov = { debut: '2026-11-01', fin: '2026-11-30' };
+    const opsJ = [op('entree', 300000, '2026-11-01'), op('sortie', 80000, '2026-11-02', { recurrent_id: 4 }),
+                  op('virement', 30000, '2026-11-01', { sens_virement: 'vers_epargne' }), op('sortie', 47500, '2026-11-05')];
+    const recsJ = [{ type: 'sortie', frequence: 'mensuelle', montant_centimes: 20000, date_debut: '2026-01-20', date_fin: null, libelle: 'Assurance' }];
+    t('Jauge : plein = 3 000 − 800 − 200 − 300 = 1 700 ; reste 1 225 ; 15 jours sur 30 écoulés → repère à la moitié',
+      jaugeReste(opsJ, recsJ, '2026-11-16', nov), { plein: 170000, reste: 122500, part: 122500 / 170000, repere: 0.5, couleur: 'vert' });
+    t('Jauge : orange sous 100 €', jaugeReste([...opsJ, op('sortie', 113000, '2026-11-10')], recsJ, '2026-11-16', nov).couleur, 'orange');
+    t('Jauge : rouge sous 50 €', jaugeReste([...opsJ, op('sortie', 118000, '2026-11-10')], recsJ, '2026-11-16', nov).couleur, 'rouge');
+    t('Jauge : en négatif, barre vide et rouge',
+      (j => [j.part, j.couleur])(jaugeReste([...opsJ, op('sortie', 130000, '2026-11-10')], recsJ, '2026-11-16', nov)), [0, 'rouge']);
+    t('Jauge : seuils réglables (orange sous 1 500 €)', jaugeReste(opsJ, recsJ, '2026-11-16', nov, { orange: 150000, rouge: 5000 }).couleur, 'orange');
+    t('Jauge : rien tant qu\'aucun revenu n\'est encodé', jaugeReste([op('sortie', 5000, '2026-11-05')], recsJ, '2026-11-16', nov), null);
+    t('Seuil du reste : 120 → 80 € passe l\'orange', franchissementReste(12000, 8000), 'orange');
+    t('Seuil du reste : 120 → 30 € passe directement le rouge', franchissementReste(12000, 3000), 'rouge');
+    t('Seuil du reste : 80 → 60 € ne prévient pas deux fois', franchissementReste(8000, 6000), null);
 
     // --- Remboursements ---
     const remb = [op('entree', 200000, '2026-10-01', { categorie_id: 20 }),

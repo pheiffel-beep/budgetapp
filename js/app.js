@@ -21,7 +21,7 @@ import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 import { chargerPoches } from './poches.js';
 
-export const VERSION = '0.16 — objectif';
+export const VERSION = '0.17 — barre du reste';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran, fiche, epargne, objectif };
 // Sous-écrans : quel onglet reste allumé
