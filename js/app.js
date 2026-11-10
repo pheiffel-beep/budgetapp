@@ -18,8 +18,9 @@ import { journal, installerCapteurs } from './journal.js';
 import { initialiserVerrou } from './verrou.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
+import { chargerPoches } from './poches.js';
 
-export const VERSION = '0.14 — remboursements';
+export const VERSION = '0.15 — poches d\'épargne';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran, fiche, epargne };
 // Sous-écrans : quel onglet reste allumé
@@ -47,6 +48,7 @@ export async function afficher(nom, { garderDefilement = false } = {}) {
     else b.removeAttribute('aria-current');
   });
   const conteneur = document.getElementById('ecran');
+  await chargerPoches();                 // noms et couleurs des poches, pour les lignes de virement
   await ECRANS[nom].afficher(conteneur);
   icones();
   if (!garderDefilement) window.scrollTo(0, 0);

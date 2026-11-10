@@ -25,7 +25,7 @@
     import { euros, versCentimes } from './js/format.js';
     import { lireSauvegarde, ecartJours, nomFichier, FORMAT, VERSION_FORMAT } from './js/sauvegarde.js';
     import {
-      totauxPeriode, epargneNette, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
+      totauxPeriode, epargneNette, etatPoche, virementsDePoche, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
       franchissement, prochainesEcheances, soldeAttendu,
       coupurePrecedente, comparerCategories, sommeDepenses, joursSansSaisie,
     } from './js/calculs.js';
@@ -52,6 +52,10 @@
       echeances(rec({ date_debut: '2028-01-31' }), null, '2028-02-29'),
       ['2028-01-31', '2028-02-29']);
 
+    t('Semestriel ancré sur le 20/02 → 20/08, puis 20/02 de l\'année suivante',
+      echeances(rec({ frequence: 'semestrielle', date_debut: '2026-02-20' }), null, '2027-03-31'), ['2026-02-20', '2026-08-20', '2027-02-20']);
+    t('Semestriel un 31/08 : le 28/02 (mois plus court), puis de nouveau le 31/08',
+      echeances(rec({ frequence: 'semestrielle', date_debut: '2026-08-31' }), null, '2027-08-31'), ['2026-08-31', '2027-02-28', '2027-08-31']);
     t('Trimestriel ancré sur le 15/03 → 15/06, 15/09, 15/12',
       echeances(rec({ frequence: 'trimestrielle', date_debut: '2026-03-15' }), null, '2026-12-31'),
       ['2026-03-15', '2026-06-15', '2026-09-15', '2026-12-15']);
@@ -189,6 +193,26 @@
       totauxPeriode([op('sortie', 100, '2026-10-24'), op('sortie', 200, '2026-10-25')], { debut: '2026-10-25', fin: '2026-11-24' }).sorties, 200);
     t('Période pas encore commencée : à venir compté depuis son début',
       aVenir(recs, '2026-10-20', { annee: 2026, mois: 11, debut: '2026-11-01', fin: '2026-11-30' }).charges, 31000);
+
+    // --- Poches d'épargne ---
+    const vp = (m, d, poche, sens = 'vers_epargne') => op('virement', m, d, { sens_virement: sens, poche_id: poche });
+    const opsP = [vp(10000, '2026-10-31', 1), vp(30000, '2026-11-01', 1), vp(5000, '2026-11-05', 1, 'depuis_epargne'),
+                  vp(20000, '2026-11-02', 2), vp(20000, '2026-12-02', 2), vp(7000, '2026-11-03', null), vp(900, '2026-11-04', 9),
+                  op('sortie', 4000, '2026-11-03')];
+    const pA = { id: 1, depart_centimes: 500000, date_depart: '2026-10-31', releves: [] };
+    t('Poche : départ + virements faits après la date de départ (5 000 + 300 − 50 = 5 250 €)',
+      etatPoche(pA, opsP), { verse: 525000, valeur: 525000, gain: 0, releve: null });
+    const pETF = { id: 2, placement: true, depart_centimes: 100000, date_depart: '2026-11-01',
+                   releves: [{ date: '2026-11-10', centimes: 130000 }, { date: '2026-10-01', centimes: 1 }] };
+    t('Placement : versé 1 000 + 200 + 200 ; valeur = relevé 1 300 + virement d\'après 200 ; plus-value 100 €',
+      etatPoche(pETF, opsP), { verse: 140000, valeur: 150000, gain: 10000, releve: { date: '2026-11-10', centimes: 130000 } });
+    t('Placement en baisse : moins-value négative',
+      etatPoche({ id: 3, depart_centimes: 50000, date_depart: '2026-11-01', releves: [{ date: '2026-11-08', centimes: 42000 }] }, opsP).gain, -8000);
+    t('Poche : virement du jour du départ encodé après la création compté, encodé avant non',
+      etatPoche({ id: 5, depart_centimes: 100000, date_depart: '2026-11-10', depart_note_le: '2026-11-10T10:00:00.000Z', releves: [] },
+        [{ ...vp(30000, '2026-11-10', 5), cree_le: '2026-11-10T11:00:00.000Z' }, { ...vp(9000, '2026-11-10', 5), cree_le: '2026-11-10T08:00:00.000Z' }]).valeur, 130000);
+    t('Virements d\'une poche', virementsDePoche(opsP, 1).length, 3);
+    t('Virements sans poche : sans poche_id ou poche supprimée', virementsDePoche(opsP, null, [1, 2]).map(o => o.montant_centimes), [7000, 900]);
 
     // --- Remboursements ---
     const remb = [op('entree', 200000, '2026-10-01', { categorie_id: 20 }),

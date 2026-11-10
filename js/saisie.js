@@ -10,6 +10,7 @@ import {
   signalerChangement, libelleOperation,
 } from './operations.js';
 import { ouvrirFiche } from './ecrans/fiche-categorie.js';
+import { chargerPoches } from './poches.js';
 
 const MAX_ENTIERS = 7;
 
@@ -30,6 +31,8 @@ export async function ouvrirSaisie(operation = null) {
     saisie: operation ? centimesVersSaisie(operation.montant_centimes) : '',
     categorie_id: operation?.categorie_id ?? null,
     sens: operation?.sens_virement ?? 'vers_epargne',
+    poche_id: operation?.poche_id ?? null,
+    poches: await chargerPoches(),
     date: operation?.date ?? aujourdhui(),
     note: operation?.note ?? '',
     compte: operation?.compte ?? '',
@@ -147,7 +150,14 @@ function dessiner() {
       <div class="segment" role="group" aria-label="Sens du virement">
         <button type="button" data-sens="vers_epargne" aria-pressed="${s.sens === 'vers_epargne'}">Vers épargne</button>
         <button type="button" data-sens="depuis_epargne" aria-pressed="${s.sens === 'depuis_epargne'}">Depuis épargne</button>
-      </div>` : `
+      </div>
+      ${s.poches.length ? `
+      <div class="grille-cat" role="group" aria-label="Poche d'épargne">
+        ${s.poches.map(p => `
+          <button type="button" class="cat-btn" data-poche="${p.id}" aria-pressed="${p.id === s.poche_id}">
+            ${pastille(p)}<span>${esc(p.nom)}</span>
+          </button>`).join('')}
+      </div>` : ''}` : `
       <div class="grille-cat" role="group" aria-label="Catégorie">
         ${categoriesAffichees().map(c => `
           <button type="button" class="cat-btn" data-cat="${c.id}" aria-pressed="${c.id === s.categorie_id}">
@@ -211,6 +221,10 @@ function brancher(el) {
     s.sens = b.dataset.sens;
     el.querySelectorAll('[data-sens]').forEach(x => x.setAttribute('aria-pressed', x === b));
   });
+  el.querySelectorAll('[data-poche]').forEach(b => b.onclick = () => {
+    s.poche_id = Number(b.dataset.poche);
+    el.querySelectorAll('[data-poche]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  });
   el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
     s.categorie_id = Number(b.dataset.cat);
     if (s.rapide) {
@@ -242,6 +256,7 @@ async function valider() {
   const montant = saisieVersCentimes(s.saisie);
   if (montant <= 0) { toast('Entre d\'abord un montant'); return; }
   if (s.type !== 'virement' && s.categorie_id == null) { toast('Choisis une catégorie'); return; }
+  if (s.type === 'virement' && s.poches.length && !s.poches.some(p => p.id === s.poche_id)) { toast('Choisis une poche d\'épargne'); return; }
 
   const op = {
     ...(s.original || {}),
@@ -249,6 +264,7 @@ async function valider() {
     sens_virement: s.sens,
     montant_centimes: montant,
     categorie_id: s.categorie_id,
+    poche_id: s.poche_id,
     date: s.date,
     note: s.note,
     compte: s.compte,

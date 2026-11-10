@@ -5,8 +5,8 @@ import { db } from './db.js';
 import { journal } from './journal.js';
 import { dateDe, joursDansMois } from './dates.js';
 
-export const FREQUENCES = { mensuelle: 1, trimestrielle: 3, annuelle: 12 };
-export const LIBELLES_FREQ = { mensuelle: 'Mensuel', trimestrielle: 'Trimestriel', annuelle: 'Annuel' };
+export const FREQUENCES = { mensuelle: 1, trimestrielle: 3, semestrielle: 6, annuelle: 12 };
+export const LIBELLES_FREQ = { mensuelle: 'Mensuel', trimestrielle: 'Trimestriel', semestrielle: 'Semestriel', annuelle: 'Annuel' };
 
 /** Un récurrent est « actif » s'il a un montant et une première échéance */
 export const estComplet = r => r.montant_centimes > 0 && !!r.date_debut;
@@ -19,7 +19,7 @@ export const jourDe = r => r.jour || (r.date_debut ? Number(r.date_debut.slice(8
  * et jusqu'à `jusqua` inclus.
  * Règles :
  *  - le jour 31 (ou 29, 30) d'un mois plus court devient le dernier jour du mois ;
- *  - trimestriel / annuel : ancré sur le mois de la première échéance (15/03 → 15/06, 15/09…) ;
+ *  - trimestriel / semestriel / annuel : ancré sur le mois de la première échéance (15/03 → 15/06, 15/09…) ;
  *  - rien avant date_debut, rien après date_fin.
  */
 export function echeances(r, apres, jusqua) {
@@ -61,6 +61,7 @@ export async function genererRecurrents(aujourdhui) {
       montant_centimes: r.montant_centimes,
       date,
       categorie_id: r.type === 'virement' ? null : r.categorie_id,
+      poche_id: r.type === 'virement' ? (r.poche_id ?? null) : null,
       compte: null,
       note: r.libelle,
       recurrent_id: r.id,

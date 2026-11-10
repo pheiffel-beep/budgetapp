@@ -1,6 +1,7 @@
 // Logique des opérations (enregistrer, supprimer, restaurer, libellés).
 
 import { db } from './db.js';
+import { pocheParId } from './poches.js';
 
 /** Prévient l'application que les données ont changé (l'écran se redessine) */
 export function signalerChangement() {
@@ -21,6 +22,7 @@ export async function enregistrerOperation(op) {
     montant_centimes: op.montant_centimes,
     date: op.date,
     categorie_id: op.type === 'virement' ? null : op.categorie_id,
+    poche_id: op.type === 'virement' ? (op.poche_id ?? null) : null,
     compte: op.compte || null,
     note: (op.note || '').trim(),
     recurrent_id: op.recurrent_id ?? null,
@@ -56,7 +58,9 @@ export async function compterUtilisation(categorieId, delta = 1) {
 /** Texte principal d'une ligne d'opération */
 export function libelleOperation(op, cat) {
   if (op.type === 'virement') {
-    return op.sens_virement === 'depuis_epargne' ? 'Virement depuis épargne' : 'Virement vers épargne';
+    const poche = pocheParId(op.poche_id);
+    const ou = poche ? poche.nom : 'épargne';
+    return op.sens_virement === 'depuis_epargne' ? `Virement depuis ${ou}` : `Virement vers ${ou}`;
   }
   if (op.type === 'remboursement') return `Remboursement · ${cat ? cat.nom : 'Sans catégorie'}`;
   return cat ? cat.nom : 'Sans catégorie';

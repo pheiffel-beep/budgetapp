@@ -12,6 +12,7 @@ import {
 import { signalerChangement } from '../operations.js';
 import { initialiserDonnees } from '../seed.js';
 import { genererRecurrents } from '../recurrents.js';
+import { ouvrirEpargne } from './epargne.js';
 import {
   exporter, partagerFichier, telechargerFichier, lireSauvegarde, restaurer, ecartJours,
 } from '../sauvegarde.js';
@@ -45,6 +46,9 @@ export async function afficher(el) {
         <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
       <li class="ligne-btn"><button type="button" id="g-recurrents">
         <i data-lucide="repeat"></i><span>Charges et revenus fixes</span>
+        <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
+      <li class="ligne-btn"><button type="button" id="g-poches">
+        <i data-lucide="piggy-bank"></i><span>Poches d'épargne</span>
         <i data-lucide="chevron-right" class="ligne-val muet"></i></button></li>
     </ul></section>
 
@@ -123,6 +127,7 @@ export async function afficher(el) {
       </ul>
     </section>`;
 
+  el.querySelector('#g-poches').onclick = () => ouvrirEpargne({ retour: 'reglages' });
   el.querySelector('#g-categories').onclick = () =>
     window.dispatchEvent(new CustomEvent('naviguer', { detail: 'categories' }));
   el.querySelector('#g-recurrents').onclick = () =>

@@ -6,6 +6,7 @@ import { euros, versCentimes, aujourdhui, dateFR } from '../format.js';
 import { esc, pastille, ouvrirPanneau, fermerPanneau, toast, icones } from '../ui.js';
 import { LIBELLES_FREQ, estComplet, estTermine, jourDe, genererRecurrents } from '../recurrents.js';
 import { signalerChangement } from '../operations.js';
+import { poches, pocheParId } from '../poches.js';
 
 const GROUPES = [
   ['entree', 'Revenus'],
@@ -53,7 +54,8 @@ export async function afficher(el) {
 }
 
 function ligne(r, cat, auj) {
-  const visuel = r.type === 'virement' ? { icone: 'arrow-left-right', couleur: '#8c95a6' }
+  const poche = r.type === 'virement' ? pocheParId(r.poche_id) : null;
+  const visuel = poche ? poche : r.type === 'virement' ? { icone: 'arrow-left-right', couleur: '#8c95a6' }
     : (cat || { icone: 'circle-help', couleur: '#8c95a6' });
   let detail, valeur;
   if (!estComplet(r)) {
@@ -61,6 +63,7 @@ function ligne(r, cat, auj) {
     valeur = '<span class="a-completer">À compléter</span>';
   } else {
     detail = `${LIBELLES_FREQ[r.frequence]} · le ${jourDe(r)}${r.frequence !== 'mensuelle' ? ` (dès le ${dateFR(r.date_debut)})` : ''}`;
+    if (poche) detail += ` · ${esc(poche.nom)}`;
     if (estTermine(r, auj)) detail += ' · terminé';
     valeur = `<span class="${r.type === 'entree' ? 'pos' : ''}">${euros(r.montant_centimes)}</span>`;
   }
@@ -102,7 +105,13 @@ async function formulaire(rec) {
           <select id="f-sens">
             <option value="vers_epargne" ${r.sens_virement !== 'depuis_epargne' ? 'selected' : ''}>Vers épargne</option>
             <option value="depuis_epargne" ${r.sens_virement === 'depuis_epargne' ? 'selected' : ''}>Depuis épargne</option>
-          </select></label>` : `
+          </select></label>
+        ${poches().length ? `
+        <label class="champ">Poche d'épargne
+          <select id="f-poche">
+            <option value="">—</option>
+            ${poches().map(p => `<option value="${p.id}" ${p.id === r.poche_id ? 'selected' : ''}>${esc(p.nom)}</option>`).join('')}
+          </select></label>` : ''}` : `
         <label class="champ">Catégorie
           <select id="f-cat">
             <option value="">—</option>
@@ -115,8 +124,8 @@ async function formulaire(rec) {
       <label class="champ">Date de la première échéance
         <input type="date" id="f-debut" value="${r.date_debut || ''}"></label>
       <p class="muet petit aide">Le jour de cette date sert pour les mois suivants (un 31 devient le dernier jour
-        des mois plus courts). Pour un trimestriel ou un annuel, choisis une vraie date d'échéance :
-        les suivantes tomberont tous les 3 ou 12 mois à partir d'elle.</p>
+        des mois plus courts). Pour un trimestriel, un semestriel ou un annuel, choisis une vraie date d'échéance :
+        les suivantes tomberont tous les 3, 6 ou 12 mois à partir d'elle.</p>
       <label class="champ">Date de fin (facultatif)
         <input type="date" id="f-fin" value="${r.date_fin || ''}"></label>
       <div class="pile">
@@ -132,6 +141,7 @@ async function formulaire(rec) {
       r.date_fin = $('f-fin').value || null;
       if ($('f-cat')) r.categorie_id = $('f-cat').value ? Number($('f-cat').value) : null;
       if ($('f-sens')) r.sens_virement = $('f-sens').value;
+      if ($('f-poche')) r.poche_id = $('f-poche').value ? Number($('f-poche').value) : null;
       const txt = $('f-montant').value.trim();
       return txt === '' ? 0 : versCentimes(txt);
     };
@@ -154,6 +164,7 @@ async function formulaire(rec) {
       r.mois_depart = r.date_debut ? Number(r.date_debut.slice(5, 7)) : null;
       if (r.type !== 'virement') r.sens_virement = null;
       if (r.type === 'virement') r.categorie_id = null;
+      else r.poche_id = null;
 
       if (rec) await db.modifier('recurrents', r);
       else await db.ajouter('recurrents', r);

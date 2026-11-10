@@ -7,11 +7,13 @@ import { libelleOperation, montantSigne } from './operations.js';
 import { ouvrirSaisie, supprimerAvecAnnulation } from './saisie.js';
 import { ouvrirFiche } from './ecrans/fiche-categorie.js';
 import { db } from './db.js';
+import { pocheParId } from './poches.js';
 
 const ICONE_VIREMENT = { icone: 'arrow-left-right', couleur: '#8c95a6' };
 
 export function htmlLigne(op, cat, { avecDate = false } = {}) {
-  const visuel = op.type === 'virement' ? ICONE_VIREMENT : (cat || { icone: 'circle-help', couleur: '#8c95a6' });
+  const poche = op.type === 'virement' ? pocheParId(op.poche_id) : null;
+  const visuel = poche ? { icone: poche.icone, couleur: poche.couleur } : op.type === 'virement' ? ICONE_VIREMENT : (cat || { icone: 'circle-help', couleur: '#8c95a6' });
   const note = op.note && op.note !== libelleOperation(op, cat) ? op.note : '';
   const sous = [avecDate ? dateFR(op.date) : '', note, op.compte].filter(Boolean).map(esc).join(' · ');
   const val = montantSigne(op);

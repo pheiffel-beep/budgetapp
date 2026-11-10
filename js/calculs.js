@@ -42,9 +42,46 @@ export function epargneNette(ops, per) {
   return { vers: t.vers, depuis: t.depuis, net: t.vers - t.depuis };
 }
 
+// ---------- Poches d'épargne ----------
+/** Virements d'une poche (pocheId), ou sans poche connue (pocheId = null et idsConnus = ids des poches) */
+export function virementsDePoche(ops, pocheId, idsConnus = []) {
+  return ops.filter(o => o.type === 'virement' &&
+    (pocheId == null ? !idsConnus.includes(o.poche_id) : o.poche_id === pocheId));
+}
+
+/**
+ * Net (versé − retiré) des virements d'une poche après un repère (départ ou relevé).
+ * Comptent : les virements datés après le repère, et ceux du même jour encodés après lui
+ * (repère noté le matin, virement encodé l'après-midi). Ceux du même jour encodés avant
+ * sont déjà compris dans le montant du repère.
+ */
+function netPocheApres(ops, pocheId, apres, noteLe = null) {
+  let n = 0;
+  for (const o of ops) {
+    if (o.type !== 'virement' || o.poche_id !== pocheId || o.date < apres) continue;
+    if (o.date === apres && !(noteLe && o.cree_le && o.cree_le > noteLe)) continue;
+    n += o.sens_virement === 'depuis_epargne' ? -o.montant_centimes : o.montant_centimes;
+  }
+  return n;
+}
+
+/**
+ * Où en est une poche :
+ *   verse  = montant de départ + virements faits depuis (ce qu'on y a mis de sa poche)
+ *   valeur = dernier relevé noté à la main + virements faits depuis ce relevé ; sans relevé, valeur = verse
+ *   gain   = valeur − verse (intérêts, hausse ou baisse d'un placement)
+ */
+export function etatPoche(poche, ops) {
+  const depart = poche.date_depart || '0000-00-00';
+  const verse = (poche.depart_centimes || 0) + netPocheApres(ops, poche.id, depart, poche.depart_note_le);
+  const releve = [...(poche.releves || [])].filter(r => r.date >= depart).sort((a, b) => a.date.localeCompare(b.date)).at(-1) || null;
+  const valeur = releve ? releve.centimes + netPocheApres(ops, poche.id, releve.date, releve.note_le) : verse;
+  return { verse, valeur, gain: valeur - verse, releve };
+}
+
 /**
  * Détail des échéances encore à venir dans la période (strictement après aujourd'hui), triées par date.
- * Les charges trimestrielles et annuelles sont comprises dès qu'elles tombent dans la période.
+ * Les charges trimestrielles, semestrielles et annuelles sont comprises dès qu'elles tombent dans la période.
  * Les revenus ne sont pas comptés.
  */
 export function echeancesAVenir(recs, auj, per) {
