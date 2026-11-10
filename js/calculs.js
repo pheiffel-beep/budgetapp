@@ -11,7 +11,7 @@
 //         + remboursements reçus (mutuelle, article rendu… : une dépense qui revient)
 // Les revenus à venir NE sont PAS comptés (prudence : pas de fausse marge).
 
-import { echeances } from './recurrents.js';
+import { echeances, FREQUENCES, estComplet, estTermine } from './recurrents.js';
 import { ajouterJours, ecartJours } from './dates.js';
 import { isoLocal } from './format.js';
 
@@ -229,4 +229,49 @@ export function joursSansSaisie(ops, auj, debutUtilisation, confirmee) {
     if (jour > dernier) dernier = jour;
   }
   return Math.max(0, ecartJours(dernier, auj));
+}
+
+// ---------- Charges fixes ----------
+/**
+ * Total des charges fixes en cours (complètes, non terminées). Les revenus et les virements d'épargne ne comptent pas.
+ *   mensuelles = somme des charges de fréquence mensuelle
+ *   lissees    = toutes les charges ramenées au mois (trimestrielle / 3, semestrielle / 6, annuelle / 12)
+ */
+export function chargesFixes(recs, auj) {
+  let mensuelles = 0, lissees = 0;
+  for (const r of recs) {
+    if (r.type !== 'sortie' || !estComplet(r) || estTermine(r, auj)) continue;
+    const pas = FREQUENCES[r.frequence] || 1;
+    if (pas === 1) mensuelles += r.montant_centimes;
+    lissees += r.montant_centimes / pas;
+  }
+  return { mensuelles, lissees: Math.round(lissees) };
+}
+
+// ---------- Objectif d'épargne ----------
+/**
+ * Où en est l'objectif.
+ *   actuel = épargne comptée aujourd'hui · cible = montant visé · rythme = épargne moyenne par mois
+ *   dateVoulue (facultative) = échéance souhaitée
+ * Renvoie : reste, pct (0 à 100), atteint, moisRestants et dateEstimee au rythme actuel (null si le rythme
+ * est nul ou négatif), effortMensuel = ce qu'il faut mettre de côté par mois pour tenir dateVoulue (null sans date).
+ */
+export function projectionObjectif({ actuel, cible, rythme, auj, dateVoulue = null }) {
+  const reste = Math.max(0, cible - actuel);
+  const pct = cible > 0 ? Math.max(0, Math.min(100, Math.floor(actuel * 100 / cible))) : 0;
+  const atteint = cible > 0 && actuel >= cible;
+  let moisRestants = null, dateEstimee = null, effortMensuel = null;
+  if (!atteint && rythme > 0) {
+    moisRestants = Math.ceil(reste / rythme);
+    const [a, m] = auj.split('-').map(Number);
+    const index = (m - 1) + moisRestants;
+    dateEstimee = { annee: a + Math.floor(index / 12), mois: (index % 12) + 1 };
+  }
+  if (!atteint && dateVoulue && dateVoulue > auj) {
+    const [a1, m1] = auj.split('-').map(Number);
+    const [a2, m2] = dateVoulue.split('-').map(Number);
+    const mois = Math.max(1, (a2 - a1) * 12 + (m2 - m1));
+    effortMensuel = Math.ceil(reste / mois);
+  }
+  return { reste, pct, atteint, moisRestants, dateEstimee, effortMensuel };
 }

@@ -25,7 +25,7 @@
     import { euros, versCentimes } from './js/format.js';
     import { lireSauvegarde, ecartJours, nomFichier, FORMAT, VERSION_FORMAT } from './js/sauvegarde.js';
     import {
-      totauxPeriode, epargneNette, etatPoche, virementsDePoche, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
+      totauxPeriode, epargneNette, etatPoche, virementsDePoche, chargesFixes, projectionObjectif, aVenir, echeancesAVenir, resteADepenser, depensesParCategorie, statutBudget,
       franchissement, prochainesEcheances, soldeAttendu,
       coupurePrecedente, comparerCategories, sommeDepenses, joursSansSaisie,
     } from './js/calculs.js';
@@ -213,6 +213,28 @@
         [{ ...vp(30000, '2026-11-10', 5), cree_le: '2026-11-10T11:00:00.000Z' }, { ...vp(9000, '2026-11-10', 5), cree_le: '2026-11-10T08:00:00.000Z' }]).valeur, 130000);
     t('Virements d\'une poche', virementsDePoche(opsP, 1).length, 3);
     t('Virements sans poche : sans poche_id ou poche supprimée', virementsDePoche(opsP, null, [1, 2]).map(o => o.montant_centimes), [7000, 900]);
+
+    // --- Charges fixes ramenées au mois ---
+    const cf = (type, frequence, montant, extra = {}) => ({ type, frequence, montant_centimes: montant, date_debut: '2026-01-10', date_fin: null, libelle: 'x', ...extra });
+    t('Charges : mensuelles seules, puis tout ramené au mois (750 + 90/3 + 120/6 + 240/12 = 820 €), sans virements ni revenus',
+      chargesFixes([cf('sortie', 'mensuelle', 75000), cf('sortie', 'trimestrielle', 9000), cf('sortie', 'semestrielle', 12000),
+        cf('sortie', 'annuelle', 24000), cf('virement', 'mensuelle', 40000), cf('entree', 'mensuelle', 300000),
+        cf('sortie', 'mensuelle', 5000, { date_fin: '2026-06-30' }), cf('sortie', 'mensuelle', 0)], '2026-11-10'),
+      { mensuelles: 75000, lissees: 82000 });
+
+    // --- Objectif d'épargne ---
+    t('Objectif : 20 000 sur 50 000, +500 €/mois → 40 %, reste 30 000, 60 mois, novembre 2031',
+      projectionObjectif({ actuel: 2000000, cible: 5000000, rythme: 50000, auj: '2026-11-10' }),
+      { reste: 3000000, pct: 40, atteint: false, moisRestants: 60, dateEstimee: { annee: 2031, mois: 11 }, effortMensuel: null });
+    t('Objectif : date souhaitée dans 24 mois → 1 250 €/mois',
+      projectionObjectif({ actuel: 2000000, cible: 5000000, rythme: 50000, auj: '2026-11-10', dateVoulue: '2028-11-30' }).effortMensuel, 125000);
+    t('Objectif : rythme nul ou négatif → pas de date estimée',
+      projectionObjectif({ actuel: 2000000, cible: 5000000, rythme: -100, auj: '2026-11-10' }).dateEstimee, null);
+    t('Objectif atteint : 100 %, reste 0',
+      projectionObjectif({ actuel: 5100000, cible: 5000000, rythme: 50000, auj: '2026-11-10' }),
+      { reste: 0, pct: 100, atteint: true, moisRestants: null, dateEstimee: null, effortMensuel: null });
+    t('Objectif : 99,9 % reste affiché 99 % (jamais 100 % avant d\'y être)',
+      projectionObjectif({ actuel: 4999900, cible: 5000000, rythme: 0, auj: '2026-11-10' }).pct, 99);
 
     // --- Remboursements ---
     const remb = [op('entree', 200000, '2026-10-01', { categorie_id: 20 }),

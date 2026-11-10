@@ -580,3 +580,34 @@ button.rep-ligne { width: 100%; border: none; background: none; color: inherit; 
 .resume-annee .montant { font-size: 1.6rem; font-weight: 700; margin: .15rem 0; font-variant-numeric: tabular-nums; }
 .resume-annee .montant.negatif { color: var(--rouge); }
 .reste .pile { margin-top: .75rem; }
+
+/* ===== v0.16 : objectif d'épargne (onglet doré) ===== */
+:root { --or: #e3c268; --or-fonce: #b98a1e; --or-degrade: linear-gradient(100deg, #b98a1e 0%, #e9cf7e 28%, #fff3c4 45%, #e3c268 60%, #b98a1e 100%); }
+[data-theme="clair"] { --or: #a97c12; --or-fonce: #8a6208; --or-degrade: linear-gradient(100deg, #8a6208 0%, #c79a2b 28%, #f0d684 45%, #c79a2b 60%, #8a6208 100%); }
+
+.onglets button.onglet-or, .onglets button.onglet-or[aria-current="page"] { color: var(--or); }
+.onglets button.onglet-or span {
+  background-image: var(--or-degrade); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  font-weight: 600; animation: reflet-or 5s linear infinite;
+}
+.onglets button.onglet-or svg.lucide { filter: drop-shadow(0 0 3px rgba(227,194,104,.55)); }
+.onglets button.onglet-or[aria-current="page"] svg.lucide { fill: currentColor; }
+@keyframes reflet-or { from { background-position: 110% 0; } to { background-position: -110% 0; } }
+@media (prefers-reduced-motion: reduce) { .onglets button.onglet-or span, .barre-or .barre-remplie { animation: none; } }
+
+.carte-or { border: 1px solid var(--or); text-align: center; }
+.carte-or .montant-or {
+  font-size: 2.4rem; font-weight: 700; margin: .25rem 0; font-variant-numeric: tabular-nums;
+  background-image: var(--or-degrade); background-size: 100% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+}
+.barre.barre-or { height: 12px; border-radius: 6px; margin: .9rem 0 .4rem; }
+.barre-or .barre-remplie { background-image: var(--or-degrade) !important; background-size: 220% 100%; border-radius: 6px; animation: reflet-or 6s linear infinite; }
+.objectif-chiffres { display: flex; justify-content: space-between; align-items: baseline; }
+.objectif-chiffres strong { color: var(--or); font-size: 1.1rem; }
+.btn.btn-or { background-image: var(--or-degrade); color: #2a2206; border: none; font-weight: 600; }
+.ligne-poche { display: flex; align-items: center; gap: .75rem; }
+.ligne-poche .op-texte { flex: 1; min-width: 0; }
+.onglets button { font-size: .7rem; min-width: 0; }
+.sans-coupure { white-space: nowrap; }

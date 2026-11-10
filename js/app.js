@@ -14,15 +14,16 @@ import * as categories from './ecrans/categories.js';
 import * as journalEcran from './ecrans/journal.js';
 import * as fiche from './ecrans/fiche-categorie.js';
 import * as epargne from './ecrans/epargne.js';
+import * as objectif from './ecrans/objectif.js';
 import { journal, installerCapteurs } from './journal.js';
 import { initialiserVerrou } from './verrou.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 import { chargerPoches } from './poches.js';
 
-export const VERSION = '0.15 — poches d\'épargne';
+export const VERSION = '0.16 — objectif';
 
-const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran, fiche, epargne };
+const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran, fiche, epargne, objectif };
 // Sous-écrans : quel onglet reste allumé
 const ONGLET_PARENT = { recurrents: 'reglages', repartition: 'accueil', categories: 'reglages', journal: 'reglages' };
 let ongletActuel = 'accueil';

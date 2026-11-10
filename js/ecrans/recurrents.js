@@ -7,6 +7,7 @@ import { esc, pastille, ouvrirPanneau, fermerPanneau, toast, icones } from '../u
 import { LIBELLES_FREQ, estComplet, estTermine, jourDe, genererRecurrents } from '../recurrents.js';
 import { signalerChangement } from '../operations.js';
 import { poches, pocheParId } from '../poches.js';
+import { chargesFixes } from '../calculs.js';
 
 const GROUPES = [
   ['entree', 'Revenus'],
@@ -19,9 +20,7 @@ export async function afficher(el) {
   const cats = Object.fromEntries((await db.tous('categories')).map(c => [c.id, c]));
   const auj = aujourdhui();
   const aCompleter = recs.filter(r => !estComplet(r)).length;
-  const totalMensuel = recs
-    .filter(r => r.type === 'sortie' && r.frequence === 'mensuelle' && estComplet(r) && !estTermine(r, auj))
-    .reduce((s, r) => s + r.montant_centimes, 0);
+  const charges = chargesFixes(recs, auj);
 
   el.innerHTML = `
     <div class="nav-retour">
@@ -34,7 +33,14 @@ export async function afficher(el) {
       <span>${aCompleter} élément${aCompleter > 1 ? 's' : ''} à compléter. Touche une ligne pour saisir le montant
       et la date de la première échéance. Les lignes sans montant sont ignorées.</span></div>` : ''}
 
-    <p class="muet petit">Charges mensuelles : <strong>${euros(totalMensuel)}</strong></p>
+    <section class="carte">
+      <ul class="liste">
+        <li><span>Charges mensuelles</span><strong class="ligne-val">${euros(charges.mensuelles)}</strong></li>
+        <li><span>Toutes charges, ramenées au mois</span><strong class="ligne-val">${euros(charges.lissees)}</strong></li>
+      </ul>
+      <p class="muet petit aide">La deuxième ligne ajoute les charges trimestrielles, semestrielles et annuelles,
+        réparties sur chaque mois. Les virements vers l'épargne ne sont pas comptés.</p>
+    </section>
 
     ${GROUPES.map(([type, titre]) => {
       const liste = recs.filter(r => r.type === type);

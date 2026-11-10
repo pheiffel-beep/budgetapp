@@ -321,4 +321,4 @@ function formulaireReleve(poche, valeurActuelle) {
 }
 
 /** Onglet du bas qui reste allumé */
-export const ongletParent = () => (etat.retour === 'historique' ? 'historique' : etat.retour === 'reglages' ? 'reglages' : 'accueil');
+export const ongletParent = () => (etat.retour === 'historique' ? 'historique' : etat.retour === 'reglages' ? 'reglages' : etat.retour === 'objectif' ? 'objectif' : 'accueil');

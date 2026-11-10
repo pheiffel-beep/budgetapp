@@ -5,7 +5,7 @@
 import { db } from './db.js';
 import { creerRecurrentsDepart } from './recurrents.js';
 
-const VERSION_DONNEES_DEPART = 3;
+const VERSION_DONNEES_DEPART = 4;
 
 // Catégories visibles dans la grille de saisie (dépenses)
 const VISIBLES = [
@@ -47,6 +47,7 @@ export async function initialiserDonnees() {
   if (version < 1) await donneesV1();
   if (version < 2) await creerRecurrentsDepart();   // phase 2 : liste des charges et revenus fixes
   if (version < 3) await ajouterClesSysteme();      // gestion des catégories : repère les catégories système
+  if (version < 4) await fusionnerDoublons();       // « Enfants (technique) » → « Enfants », « Divers (technique) » → « Divers/Imprévus »
   await db.definirParametre('version_donnees_depart', VERSION_DONNEES_DEPART);
   return true;
 }
@@ -72,5 +73,44 @@ async function ajouterClesSysteme() {
   const cles = { 'Divers/Imprévus': 'divers', 'Autre revenu': 'autre_revenu' };
   for (const c of await db.tous('categories')) {
     if (cles[c.nom] && !c.cle) await db.modifier('categories', { ...c, cle: cles[c.nom] });
+  }
+}
+
+/**
+ * Fusionne les catégories en double : les charges fixes « Enfants (technique) » et « Divers (technique) »
+ * rejoignent « Enfants » et « Divers/Imprévus », pour voir tout le coût au même endroit.
+ * Opérations et charges fixes sont déplacées, les budgets additionnés, puis le doublon est supprimé.
+ * Si la catégorie d'accueil n'existe plus, le doublon devient simplement une catégorie normale.
+ */
+export async function fusionnerDoublons() {
+  const PAIRES = [
+    ['Enfants (technique)', c => !c.technique && c.type === 'sortie' && c.nom === 'Enfants'],
+    ['Divers (technique)', c => !c.technique && c.type === 'sortie' && c.cle === 'divers'],
+  ];
+  for (const [nomSource, estDest] of PAIRES) {
+    const cats = await db.tous('categories');
+    const source = cats.find(c => c.technique && c.nom === nomSource);
+    if (!source) continue;
+    const dest = cats.find(estDest);
+    if (!dest) {
+      await db.modifier('categories', { ...source, nom: nomSource.replace(' (technique)', ''), technique: false, masquee: false });
+      continue;
+    }
+    for (const table of ['operations', 'recurrents']) {
+      for (const o of (await db.tous(table)).filter(x => x.categorie_id === source.id)) {
+        await db.modifier(table, { ...o, categorie_id: dest.id });
+      }
+    }
+    const budgets = await db.tous('budgets');
+    const bSource = budgets.find(b => b.categorie_id === source.id);
+    const bDest = budgets.find(b => b.categorie_id === dest.id);
+    if (bSource && bDest) {
+      await db.modifier('budgets', { ...bDest, montant_mensuel_centimes: bDest.montant_mensuel_centimes + bSource.montant_mensuel_centimes });
+      await db.supprimer('budgets', bSource.id);
+    } else if (bSource) {
+      await db.modifier('budgets', { ...bSource, categorie_id: dest.id });
+    }
+    await db.modifier('categories', { ...dest, utilisations: (dest.utilisations || 0) + (source.utilisations || 0) });
+    await db.supprimer('categories', source.id);
   }
 }
