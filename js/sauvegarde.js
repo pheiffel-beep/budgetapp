@@ -16,7 +16,7 @@ export const PARAMS_EXPORTES = ['jour_debut_mois', 'theme', 'comptes', 'version_
 export const JOURS_RAPPEL = 30;            // rappel mensuel
 export const JOURS_RAPPEL_PREMIERE = 7;    // si aucune sauvegarde n'a encore été faite
 
-const TYPES_OPERATION = ['sortie', 'entree', 'virement'];
+const TYPES_OPERATION = ['sortie', 'entree', 'virement', 'remboursement'];
 const RE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const nomFichier = (dateIso) => `budget-sauvegarde-${dateIso}.json`;

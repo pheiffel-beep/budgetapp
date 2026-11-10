@@ -190,6 +190,20 @@
     t('Période pas encore commencée : à venir compté depuis son début',
       aVenir(recs, '2026-10-20', { annee: 2026, mois: 11, debut: '2026-11-01', fin: '2026-11-30' }).charges, 31000);
 
+    // --- Remboursements ---
+    const remb = [op('entree', 200000, '2026-10-01', { categorie_id: 20 }),
+                  op('sortie', 6000, '2026-10-05', { categorie_id: 7 }),
+                  op('remboursement', 2500, '2026-10-12', { categorie_id: 7 }),
+                  op('sortie', 4000, '2026-10-08', { categorie_id: 2 }),
+                  op('remboursement', 1000, '2026-09-28', { categorie_id: 7 })];
+    t('Remboursement : compté à part dans les totaux (ni revenu ni sortie)', totauxPeriode(remb, oct),
+      { entrees: 200000, sorties: 10000, remboursements: 2500, vers: 0, depuis: 0 });
+    t('Remboursement : le reste à dépenser remonte (2 000 − 100 + 25 = 1 925,00 €)', resteADepenser(remb, [], '2026-10-15', oct).reste, 192500);
+    t('Remboursement : en déduction de sa catégorie (60 − 25 = 35 €)', depensesParCategorie(remb, oct), { 7: 3500, 2: 4000 });
+    t('Remboursement seul dans la période : catégorie négative', depensesParCategorie(remb, { debut: '2026-09-01', fin: '2026-09-30' }), { 7: -1000 });
+    t('Remboursement : budget jamais négatif', statutBudget(-1000, 10000), { ratio: 0, couleur: 'vert' });
+    t('Remboursement : ajouté au solde attendu', soldeAttendu({ date: '2026-10-10', solde_centimes: 100000 }, [op('remboursement', 2500, '2026-10-12')], '2026-10-15', 'Courant'), 102500);
+
     // --- Budgets ---
     t('Dépenses par catégorie (hors période ignorées)', depensesParCategorie(ops, oct), { 9: 100500, 2: 30000 });
     t('Budget : 79 % vert', statutBudget(7900, 10000).couleur, 'vert');

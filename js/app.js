@@ -19,7 +19,7 @@ import { initialiserVerrou } from './verrou.js';
 import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 
-export const VERSION = '0.13 — clair soigné';
+export const VERSION = '0.14 — remboursements';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran, fiche, epargne };
 // Sous-écrans : quel onglet reste allumé

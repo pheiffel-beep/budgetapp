@@ -49,6 +49,7 @@ export async function afficher(el) {
   const opsPeriode = toutes.filter(dansPeriode);
   const detailRevenus = lignesOps(opsPeriode.filter(o => o.type === 'entree'));
   const detailPayees = lignesOps(opsPeriode.filter(o => o.type === 'sortie'));
+  const detailRembours = lignesOps(opsPeriode.filter(o => o.type === 'remboursement'));
   const detailVirements = lignesOps(opsPeriode.filter(o => o.type === 'virement'));
   const aVenirListe = echeancesAVenir(recs, auj, per);
   const lignesAVenir = liste => liste.map(e => `<li><span>${jjmm(e.date)} · ${esc(e.libelle)}</span><span class="ligne-val">${euros(e.montant)}</span></li>`).join('');
@@ -109,6 +110,7 @@ export async function afficher(el) {
         <ul class="liste">
           ${detail('Revenus reçus', '+', calc.entrees, detailRevenus, 'pos')}
           ${detail('Dépenses et charges déjà payées', '-', calc.sorties, detailPayees)}
+          ${calc.remboursements ? detail('Remboursements reçus', '+', calc.remboursements, detailRembours, 'pos') : ''}
           ${detail(`Charges fixes encore à venir (${aVenirListe.filter(e => e.type === 'sortie').length})`, '-', v.charges, lignesAVenir(aVenirListe.filter(e => e.type === 'sortie')))}
           ${calc.vers + v.vers ? detail('Virements vers épargne (passés et à venir)', '-', calc.vers + v.vers,
               detailVirements + lignesAVenir(aVenirListe.filter(e => e.type === 'virement' && e.sens !== 'depuis_epargne'))) : ''}

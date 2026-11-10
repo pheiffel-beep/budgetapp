@@ -8,6 +8,7 @@
 //         − charges fixes encore à venir dans la période
 //         − virements vers épargne (passés et à venir)
 //         + virements depuis épargne (passés et à venir)
+//         + remboursements reçus (mutuelle, article rendu… : une dépense qui revient)
 // Les revenus à venir NE sont PAS comptés (prudence : pas de fausse marge).
 
 import { echeances } from './recurrents.js';
@@ -18,11 +19,12 @@ const dans = (iso, per) => iso >= per.debut && iso <= per.fin;
 
 /** Totaux des opérations d'une période */
 export function totauxPeriode(ops, per) {
-  const t = { entrees: 0, sorties: 0, vers: 0, depuis: 0 };
+  const t = { entrees: 0, sorties: 0, remboursements: 0, vers: 0, depuis: 0 };
   for (const o of ops) {
     if (!dans(o.date, per)) continue;
     if (o.type === 'entree') t.entrees += o.montant_centimes;
     else if (o.type === 'sortie') t.sorties += o.montant_centimes;
+    else if (o.type === 'remboursement') t.remboursements += o.montant_centimes;
     else if (o.type === 'virement') {
       if (o.sens_virement === 'depuis_epargne') t.depuis += o.montant_centimes;
       else t.vers += o.montant_centimes;
@@ -73,7 +75,7 @@ export function aVenir(recs, auj, per) {
 export function resteADepenser(ops, recs, auj, per) {
   const t = totauxPeriode(ops, per);
   const v = aVenir(recs, auj, per);
-  const reste = t.entrees - t.sorties - t.vers + t.depuis - v.charges - v.vers + v.depuis;
+  const reste = t.entrees - t.sorties + t.remboursements - t.vers + t.depuis - v.charges - v.vers + v.depuis;
   const debutCompte = auj > per.debut ? auj : per.debut;
   const joursRestants = Math.max(1, ecartJours(debutCompte, per.fin) + 1);
   return {
@@ -85,21 +87,30 @@ export function resteADepenser(ops, recs, auj, per) {
   };
 }
 
-/** Dépenses (sorties) de la période, par catégorie : { categorie_id: centimes } */
+/**
+ * Dépenses nettes de la période, par catégorie : { categorie_id: centimes }.
+ * Net = sorties − remboursements (60 € chez le médecin, 25 € rendus par la mutuelle : 35 €).
+ * Peut être négatif si le remboursement tombe dans une autre période que la dépense.
+ */
 export function depensesParCategorie(ops, per) {
   const res = {};
   for (const o of ops) {
-    if (o.type !== 'sortie' || !dans(o.date, per)) continue;
-    res[o.categorie_id] = (res[o.categorie_id] || 0) + o.montant_centimes;
+    if (!dans(o.date, per)) continue;
+    if (o.type === 'sortie') res[o.categorie_id] = (res[o.categorie_id] || 0) + o.montant_centimes;
+    else if (o.type === 'remboursement') res[o.categorie_id] = (res[o.categorie_id] || 0) - o.montant_centimes;
   }
   return res;
 }
+
+/** Ce qu'une opération pèse dans sa catégorie : sortie en plus, remboursement en moins */
+export const poidsDepense = (o) =>
+  o.type === 'sortie' ? o.montant_centimes : o.type === 'remboursement' ? -o.montant_centimes : 0;
 
 // ---------- Budgets ----------
 /** vert < 80 %, orange de 80 % à 100 %, rouge au-delà de 100 % */
 export function statutBudget(depense, budget) {
   if (!(budget > 0)) return { ratio: 0, couleur: 'vert' };
-  const ratio = depense / budget;
+  const ratio = Math.max(0, depense) / budget;
   const couleur = depense > budget ? 'rouge' : depense * 10 >= budget * 8 ? 'orange' : 'vert';
   return { ratio, couleur };
 }
@@ -135,7 +146,7 @@ export function soldeAttendu(ref, ops, auj, comptePrincipal) {
   for (const o of ops) {
     if (o.date <= ref.date || o.date > auj) continue;
     if (o.compte && o.compte !== comptePrincipal) continue;
-    if (o.type === 'entree') s += o.montant_centimes;
+    if (o.type === 'entree' || o.type === 'remboursement') s += o.montant_centimes;
     else if (o.type === 'sortie') s -= o.montant_centimes;
     else if (o.type === 'virement') s += o.sens_virement === 'depuis_epargne' ? o.montant_centimes : -o.montant_centimes;
   }

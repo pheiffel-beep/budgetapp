@@ -15,8 +15,9 @@ export function htmlLigne(op, cat, { avecDate = false } = {}) {
   const note = op.note && op.note !== libelleOperation(op, cat) ? op.note : '';
   const sous = [avecDate ? dateFR(op.date) : '', note, op.compte].filter(Boolean).map(esc).join(' · ');
   const val = montantSigne(op);
-  const signe = op.type === 'entree' ? '+' : '';
-  const classe = op.type === 'entree' ? 'pos' : op.type === 'virement' ? 'neutre' : '';
+  const positif = op.type === 'entree' || op.type === 'remboursement';
+  const signe = positif ? '+' : '';
+  const classe = positif ? 'pos' : op.type === 'virement' ? 'neutre' : '';
   return `
     <li class="op" data-id="${op.id}">
       <div class="op-fond" aria-hidden="true"><i data-lucide="trash-2"></i></div>

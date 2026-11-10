@@ -67,7 +67,7 @@ async function dessinerListe(el, cats) {
   const toutes = await db.operationsEntre(periode.debut, periode.fin);
   const q = filtres.recherche.trim().toLowerCase();
   const ops = toutes.filter(o =>
-    (filtres.type === 'tous' || o.type === filtres.type) &&
+    (filtres.type === 'tous' || o.type === filtres.type || (filtres.type === 'sortie' && o.type === 'remboursement')) &&
     (!filtres.categorie || String(o.categorie_id) === filtres.categorie) &&
     (!filtres.compte || o.compte === filtres.compte) &&
     (!q || (o.note || '').toLowerCase().includes(q))
@@ -82,6 +82,7 @@ async function dessinerListe(el, cats) {
   el.querySelector('#h-resume').innerHTML = ops.length ? `
     <span>Entrées <strong class="pos">+${euros(somme('entree'))}</strong></span>
     <span>Sorties <strong>${euros(-somme('sortie'))}</strong></span>
+    ${somme('remboursement') ? `<span>Remboursé <strong class="pos">+${euros(somme('remboursement'))}</strong></span>` : ''}
     ${virements ? `<span>Épargne <strong>${netEp > 0 ? '+' : ''}${euros(netEp)}</strong></span>` : ''}` : '';
 
   const zone = el.querySelector('#h-liste');

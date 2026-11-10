@@ -36,7 +36,8 @@ function ecranActuel() {
 export const ongletParent = () => ECRAN_PARENT[etat.retour] || 'historique';
 
 /** Somme signée « dépense » (positive) d'une liste d'opérations de la catégorie */
-const somme = liste => liste.reduce((s, o) => s + o.montant_centimes, 0);
+// Un remboursement vient en déduction de sa catégorie
+const somme = liste => liste.reduce((s, o) => s + (o.type === 'remboursement' ? -o.montant_centimes : o.montant_centimes), 0);
 
 export async function afficher(el) {
   const jourDebut = await db.parametre('jour_debut_mois', 1);
@@ -53,7 +54,8 @@ export async function afficher(el) {
 
   const type = cat.type === 'entree' ? 'entree' : 'sortie';
   const toutesOps = await db.tous('operations');
-  const ops = toutesOps.filter(o => o.categorie_id === cat.id && o.type === type);
+  const ops = toutesOps.filter(o => o.categorie_id === cat.id &&
+    (o.type === type || (type === 'sortie' && o.type === 'remboursement')));
   const premiereDate = toutesOps.reduce((m, o) => (!m || o.date < m ? o.date : m), null);
   const premiere = premiereDate ? periodeContenant(premiereDate, jourDebut) : courante;
 
@@ -116,7 +118,7 @@ export async function afficher(el) {
           <button type="button" class="graphe-col${i + 1 === etat.mois ? ' choisi' : ''}${m.futur ? ' futur' : ''}" data-mois="${i + 1}"
               aria-pressed="${i + 1 === etat.mois}" aria-label="${libellePeriode(m.p, jourDebut)} : ${euros(m.total)}">
             <span class="graphe-valeur">${m.total ? euros(m.total).replace(/,00\s?€$/, ' €') : ''}</span>
-            <span class="graphe-piste"><span class="graphe-barre" style="height:${m.total ? Math.max(4, Math.round(m.total * 100 / max)) : 0}%;background:${esc(cat.couleur)}"></span></span>
+            <span class="graphe-piste"><span class="graphe-barre" style="height:${m.total > 0 ? Math.max(4, Math.round(m.total * 100 / max)) : 0}%;background:${esc(cat.couleur)}"></span></span>
             <span class="graphe-mois">${MOIS_COURTS[i]}</span>
           </button>`).join('')}
       </div>

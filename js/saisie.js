@@ -97,6 +97,12 @@ function clavierPhysique(ev) {
 // ---------- Dessin ----------
 function categoriesAffichees() {
   const typeCat = s.type === 'entree' ? 'entree' : 'sortie';
+  // Remboursement : les catégories de charges fixes (Santé, Assurances…) sont proposées aussi,
+  // à la suite des catégories du quotidien
+  if (s.type === 'remboursement') {
+    return s.categories.filter(c => c.type === 'sortie')
+      .sort((a, b) => (a.masquee ? 1 : 0) - (b.masquee ? 1 : 0) || (b.utilisations || 0) - (a.utilisations || 0) || a.ordre - b.ordre);
+  }
   let liste = s.categories.filter(c => c.type === typeCat && !c.masquee);
   // En édition, la catégorie actuelle reste visible même si elle est masquée (ex. technique)
   const actuelle = s.categories.find(c => c.id === s.categorie_id);
@@ -106,7 +112,7 @@ function categoriesAffichees() {
 
 function dessiner() {
   const el = document.getElementById('saisie');
-  const TYPES = [['sortie', 'Sortie'], ['entree', 'Entrée'], ['virement', 'Virement']];
+  const TYPES = [['sortie', 'Sortie'], ['entree', 'Entrée'], ['remboursement', 'Rembours.'], ['virement', 'Virement']];
   const touches = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', 'eff'];
 
   el.innerHTML = `
@@ -115,9 +121,12 @@ function dessiner() {
       <button type="button" class="btn-icone" id="s-fermer" aria-label="Fermer"><i data-lucide="x"></i></button>
     </div>
 
-    <div class="segment" role="group" aria-label="Type d'opération">
-      ${TYPES.map(([v, l]) => `<button type="button" data-type="${v}" aria-pressed="${s.type === v}">${l}</button>`).join('')}
+    <div class="segment seg-types" role="group" aria-label="Type d'opération">
+      ${TYPES.map(([v, l]) => `<button type="button" data-type="${v}" aria-pressed="${s.type === v}"${v === 'remboursement' ? ' aria-label="Remboursement"' : ''}>${l}</button>`).join('')}
     </div>
+    ${s.type === 'remboursement' ? `
+      <p class="muet petit centre aide-type">Argent qui revient sur une dépense (mutuelle, article rendu…) :
+        il est déduit de la catégorie choisie.</p>` : ''}
 
     <div class="montant-saisie type-${s.type}" aria-live="polite">
       <span id="montant-valeur">${affichageMontant(s.saisie)}</span><span class="euro"> €</span>
@@ -189,7 +198,12 @@ function brancher(el) {
   el.querySelector('#s-fermer').onclick = fermer;
   el.querySelectorAll('[data-type]').forEach(b => b.onclick = () => {
     lireOptions();
-    if (s.type !== b.dataset.type) { s.type = b.dataset.type; s.categorie_id = null; }
+    if (s.type !== b.dataset.type) {
+      // Sortie → remboursement : mêmes catégories, on garde celle qui est choisie
+      const garder = s.type === 'sortie' && b.dataset.type === 'remboursement';
+      s.type = b.dataset.type;
+      if (!garder) s.categorie_id = null;
+    }
     dessiner();
   });
   el.querySelectorAll('[data-touche]').forEach(b => b.onclick = () => touche(b.dataset.touche));
@@ -245,7 +259,8 @@ async function valider() {
   const s_majFaite = !!(s.recurrent && s.majDefaut && s.recurrent.montant_centimes !== montant);
   if (s_majFaite) await db.modifier('recurrents', { ...s.recurrent, montant_centimes: montant });
   const cat = s.categories.find(c => c.id === s.categorie_id);
-  if (!edition) await compterUtilisation(op.categorie_id, 1);
+  const compte = !edition && op.type !== 'remboursement';   // un remboursement ne change pas l'ordre des catégories
+  if (compte) await compterUtilisation(op.categorie_id, 1);
   fermer();
   signalerChangement();
 
@@ -264,7 +279,7 @@ async function valider() {
       ton: alerte ? alerte.ton : null,
       surAction: async () => {
         await supprimerOperation(id);
-        await compterUtilisation(op.categorie_id, -1);
+        if (compte) await compterUtilisation(op.categorie_id, -1);
         signalerChangement();
       },
     });

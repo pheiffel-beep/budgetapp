@@ -58,10 +58,11 @@ export function libelleOperation(op, cat) {
   if (op.type === 'virement') {
     return op.sens_virement === 'depuis_epargne' ? 'Virement depuis épargne' : 'Virement vers épargne';
   }
+  if (op.type === 'remboursement') return `Remboursement · ${cat ? cat.nom : 'Sans catégorie'}`;
   return cat ? cat.nom : 'Sans catégorie';
 }
 
-/** Montant signé pour l'affichage : sortie négative, entrée positive, virement neutre */
+/** Montant signé pour l'affichage : sortie négative, entrée et remboursement positifs, virement neutre */
 export function montantSigne(op) {
   if (op.type === 'sortie') return -op.montant_centimes;
   return op.montant_centimes;
