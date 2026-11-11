@@ -75,38 +75,20 @@ export async function genererRecurrents(aujourdhui) {
   return total;
 }
 
-// ---------- Liste de départ (montants et dates à compléter par l'utilisateur) ----------
+// ---------- Liste de départ : charges courantes que tout le monde a (montants et dates à compléter par l'utilisateur) ----------
 // [libellé, type, fréquence, nom de catégorie]
 export const RECURRENTS_DEPART = [
   ['Salaire net', 'entree', 'mensuelle', 'Salaire'],
-  ['Rémunération variable', 'entree', 'mensuelle', 'Rémunération variable'],
-  ['Poire pour la soif', 'virement', 'mensuelle', null],
   ['Loyer', 'sortie', 'mensuelle', 'Logement'],
   ['Énergie (acompte)', 'sortie', 'mensuelle', 'Énergie'],
   ['Eau', 'sortie', 'trimestrielle', 'Énergie'],
   ['Internet', 'sortie', 'mensuelle', 'Internet & GSM'],
   ['GSM', 'sortie', 'mensuelle', 'Internet & GSM'],
-  ['GSM enfant', 'sortie', 'mensuelle', 'Enfants (technique)'],
   ['Mutuelle', 'sortie', 'mensuelle', 'Santé'],
-  ['Assurance hospitalisation', 'sortie', 'trimestrielle', 'Santé'],
-  ['Assurance auto', 'sortie', 'mensuelle', 'Transport'],
   ['Assurance incendie', 'sortie', 'mensuelle', 'Logement'],
   ['Assurance familiale', 'sortie', 'mensuelle', 'Assurances'],
-  ['Assurance décès', 'sortie', 'mensuelle', 'Assurances'],
-  ['Prêt voiture', 'sortie', 'mensuelle', 'Transport'],
-  ['Part contributive enfant', 'sortie', 'mensuelle', 'Enfants (technique)'],
-  ['Argent de poche enfant', 'sortie', 'mensuelle', 'Enfants (technique)'],
-  ['Frais bancaires 1 (prêt + gestion)', 'sortie', 'mensuelle', 'Frais bancaires'],
-  ['Frais bancaires 2 (gestion)', 'sortie', 'mensuelle', 'Frais bancaires'],
-  ['Cotisation', 'sortie', 'mensuelle', 'Divers (technique)'],
-  ['Taxe auto', 'sortie', 'annuelle', 'Transport'],
-  ['Amazon Prime', 'sortie', 'annuelle', 'Abonnements'],
-  ['YouTube Premium', 'sortie', 'mensuelle', 'Abonnements'],
-  ['Spotify', 'sortie', 'mensuelle', 'Abonnements'],
-  ['Claude', 'sortie', 'mensuelle', 'Abonnements'],
-  ['Gemini', 'sortie', 'mensuelle', 'Abonnements'],
-  ['Apple iCloud+', 'sortie', 'mensuelle', 'Abonnements'],
-  ['Google One', 'sortie', 'mensuelle', 'Abonnements'],
+  ['Assurance auto', 'sortie', 'mensuelle', 'Transport'],
+  ['Frais bancaires', 'sortie', 'mensuelle', 'Frais bancaires'],
 ];
 
 /** Crée la liste de départ (montants à 0, dates vides) */
