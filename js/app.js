@@ -21,7 +21,7 @@ import { genererRecurrents } from './recurrents.js';
 import { aujourdhui } from './format.js';
 import { chargerPoches } from './poches.js';
 
-export const VERSION = '0.18 — recalage clair, jours restants';
+export const VERSION = '0.19 — ordre des charges fixes';
 
 const ECRANS = { accueil, historique, budgets, reglages, recurrents, repartition, categories, journal: journalEcran, fiche, epargne, objectif };
 // Sous-écrans : quel onglet reste allumé

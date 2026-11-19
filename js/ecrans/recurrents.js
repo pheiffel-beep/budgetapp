@@ -15,6 +15,8 @@ const GROUPES = [
   ['sortie', 'Charges fixes'],
 ];
 
+let modeOrdre = false; // « Réorganiser » : flèches ↑ ↓ à la place du toucher-pour-modifier
+
 export async function afficher(el) {
   const recs = (await db.tous('recurrents')).sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999) || a.id - b.id);
   const cats = Object.fromEntries((await db.tous('categories')).map(c => [c.id, c]));
@@ -42,21 +44,63 @@ export async function afficher(el) {
         réparties sur chaque mois. Les virements vers l'épargne ne sont pas comptés.</p>
     </section>
 
+    <button type="button" class="btn ${modeOrdre ? 'btn-principal' : ''}" id="r-ordre">
+      <i data-lucide="${modeOrdre ? 'check' : 'arrow-up-down'}"></i>${modeOrdre ? 'Terminé' : 'Réorganiser'}</button>
+    ${modeOrdre ? '<p class="muet petit aide">Utilise les flèches pour mettre tes lignes dans l\'ordre que tu veux. Il est enregistré tout de suite.</p>' : ''}
+
     ${GROUPES.map(([type, titre]) => {
       const liste = recs.filter(r => r.type === type);
       if (!liste.length) return '';
       return `<h2>${titre}</h2>
         <section class="carte carte-liste"><ul class="liste">
-          ${liste.map(r => ligne(r, cats[r.categorie_id], auj)).join('')}
+          ${liste.map((r, i) => modeOrdre
+            ? ligneOrdre(r, cats[r.categorie_id], i === 0, i === liste.length - 1)
+            : ligne(r, cats[r.categorie_id], auj)).join('')}
         </ul></section>`;
     }).join('')}
 
-    <button type="button" class="btn" id="r-ajouter"><i data-lucide="plus"></i>Ajouter une charge ou un revenu fixe</button>`;
+    ${modeOrdre ? '' : '<button type="button" class="btn" id="r-ajouter"><i data-lucide="plus"></i>Ajouter une charge ou un revenu fixe</button>'}`;
+
+  const redessiner = () => afficher(el).then(icones);
+  el.querySelector('#r-ordre').onclick = () => { modeOrdre = !modeOrdre; redessiner(); };
+  el.querySelectorAll('[data-monter], [data-descendre]').forEach(b => b.onclick = async () => {
+    const id = Number(b.dataset.monter || b.dataset.descendre);
+    const r = recs.find(x => x.id === id);
+    const groupe = recs.filter(x => x.type === r.type);
+    const i = groupe.indexOf(r);
+    const j = b.dataset.monter ? i - 1 : i + 1;
+    if (j < 0 || j >= groupe.length) return;
+    [groupe[i], groupe[j]] = [groupe[j], groupe[i]];
+    // Renumérote toute la liste (les trois groupes) pour garder un ordre propre
+    const nouvel = GROUPES.flatMap(([t]) => (t === r.type ? groupe : recs.filter(x => x.type === t)));
+    recs.filter(x => !GROUPES.some(([t]) => t === x.type)).forEach(x => nouvel.push(x));
+    for (const [k, x] of nouvel.entries()) {
+      if (x.ordre !== k) { x.ordre = k; await db.modifier('recurrents', x); }
+    }
+    await redessiner();
+    document.querySelector(`[data-${b.dataset.monter ? 'monter' : 'descendre'}="${id}"]`)?.focus();
+  });
+  if (modeOrdre) {
+    el.querySelector('#r-retour').onclick = () => { modeOrdre = false; window.dispatchEvent(new CustomEvent('naviguer', { detail: 'reglages' })); };
+    return;
+  }
 
   el.querySelector('#r-retour').onclick = () => window.dispatchEvent(new CustomEvent('naviguer', { detail: 'reglages' }));
   el.querySelector('#r-ajouter').onclick = () => formulaire(null);
   el.querySelectorAll('[data-rec]').forEach(b => b.onclick = () =>
     formulaire(recs.find(r => r.id === Number(b.dataset.rec))));
+}
+
+function ligneOrdre(r, cat, premier, dernier) {
+  const poche = r.type === 'virement' ? pocheParId(r.poche_id) : null;
+  const visuel = poche ? poche : r.type === 'virement' ? { icone: 'arrow-left-right', couleur: '#8c95a6' }
+    : (cat || { icone: 'circle-help', couleur: '#8c95a6' });
+  return `<li class="ligne-ordre">
+      ${pastille(visuel)}
+      <span class="op-texte"><span class="op-titre">${esc(r.libelle)}</span></span>
+      <button type="button" class="btn-icone" data-monter="${r.id}" ${premier ? 'disabled' : ''} aria-label="Monter ${esc(r.libelle)}"><i data-lucide="chevron-up"></i></button>
+      <button type="button" class="btn-icone" data-descendre="${r.id}" ${dernier ? 'disabled' : ''} aria-label="Descendre ${esc(r.libelle)}"><i data-lucide="chevron-down"></i></button>
+    </li>`;
 }
 
 function ligne(r, cat, auj) {
