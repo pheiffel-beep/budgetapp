@@ -4,7 +4,7 @@
 import { db } from '../db.js';
 import { euros, eurosArrondis, aujourdhui, jjmm } from '../format.js';
 import { esc, pastille, icones } from '../ui.js';
-import { periodeContenant, libelleDates } from '../dates.js';
+import { periodeContenant, libelleDates, ecartJours } from '../dates.js';
 import { categoriesParId, triRecent } from '../operations.js';
 import { htmlLigne, activerGestes } from '../ligne-operation.js';
 import { rappelNecessaire, reporterRappel } from '../sauvegarde.js';
@@ -63,6 +63,8 @@ export async function afficher(el) {
   const negatif = calc.reste < 0;
   const ep = epargneNette(toutes, per);
   const v = calc.aVenir;
+  const joursRestants = ecartJours(auj, per.fin) + 1;
+  const libelleRestant = joursRestants <= 1 ? 'dernier jour' : `encore ${joursRestants} jours`;
 
   el.innerHTML = `
     <h1>Accueil</h1>
@@ -107,7 +109,7 @@ export async function afficher(el) {
         ? 'Tu as dépassé ce que tu avais ce mois-ci'
         : calc.reste === 0 ? (calc.entrees ? 'Il ne reste rien à dépenser' : '')
         : `soit ~${eurosArrondis(calc.parJour)}/jour jusqu'au ${jjmm(per.fin)}`}</div>
-      <div class="muet petit">${libelleDates(per)}</div>
+      <div class="muet petit">${libelleDates(per)} · <strong class="jours-restants">${libelleRestant}</strong></div>
       <button type="button" class="ligne-epargne" id="a-epargne" aria-label="Épargne du mois : ${euros(ep.net)}. Toucher pour voir le détail.">
         Épargne du mois : <strong>${ep.net > 0 ? '+' : ''}${euros(ep.net)}</strong><i data-lucide="chevron-right" aria-hidden="true"></i></button>
       ${calc.entrees === 0 ? '<div class="muet petit">Aucun revenu encodé sur cette période : le calcul part de 0 €.</div>' : ''}
@@ -129,7 +131,7 @@ export async function afficher(el) {
       </details>
 
       <button type="button" class="btn btn-leger" id="a-recaler"><i data-lucide="scale"></i>Recaler avec mon solde réel</button>
-      ${ref ? `<div class="muet petit">Dernier recalage : ${jjmm(ref.date)}</div>` : ''}
+      ${ref ? `<div class="muet petit">Dernier recalage : ${jjmm(ref.date)} (${euros(ref.solde_centimes)} en banque)</div>` : ''}
     </section>
 
     <section class="carte carte-liste"><ul class="liste">
