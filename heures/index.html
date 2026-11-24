@@ -128,7 +128,7 @@ input[type=number]{font:inherit;border:1px solid var(--line);border-radius:10px;
         </div>
       </div>
       <div id="segs"></div>
-      <div class="note">Rappel : 30 min avant et 30 min après sont ajoutées automatiquement. Une fin plus tôt que le début compte comme le lendemain (service de nuit).</div>
+      <div class="note">Une fin plus tôt que le début compte comme le lendemain (service de nuit).</div>
     </div>
     <div class="card">
       <div class="toggle"><span>Rôle de garde (R)</span><div class="sw" id="tGarde"></div></div>
@@ -181,10 +181,6 @@ input[type=number]{font:inherit;border:1px solid var(--line);border-radius:10px;
         <input type="number" id="sWeek" step="0.5" min="1" max="60">
       </div>
       <div class="note" id="sDayNote"></div>
-      <div class="row between" style="margin-top:10px">
-        <span>Bonus rappel (min avant + après)</span>
-        <input type="number" id="sBonus" step="5" min="0" max="120">
-      </div>
       <div class="note">Jours fériés belges reconnus automatiquement : ils comptent 7 h 36 en semaine.</div>
     </div>
     <div class="card">
@@ -208,7 +204,7 @@ input[type=number]{font:inherit;border:1px solid var(--line);border-radius:10px;
         <button class="btn" id="bkLoad" style="width:100%;margin-top:8px">Restaurer cette sauvegarde</button>
       </div>
     </div>
-    <div class="card small">Prototype v0.2 · aucune donnée envoyée · rien d'autre que des horaires.</div>
+    <div class="card small">Prototype v0.3 · aucune donnée envoyée · rien d'autre que des horaires.</div>
   </section>
 </main>
 
@@ -227,7 +223,7 @@ var KEY="mesheures.v1";
 var mem=null;
 function load(){
   try{var s=localStorage.getItem(KEY); if(s) return JSON.parse(s);}catch(e){}
-  return mem||{days:{},settings:{weekMin:2280,bonus:30}};
+  return mem||{days:{},settings:{weekMin:2280}};
 }
 function save(){
   mem=data;
@@ -235,8 +231,8 @@ function save(){
 }
 var data=load();
 if(!data.days) data.days={};
-if(!data.settings) data.settings={weekMin:2280,bonus:30};
-if(data.settings.bonus==null) data.settings.bonus=30;
+if(!data.settings) data.settings={weekMin:2280};
+delete data.settings.bonus;
 if(!data.settings.dispoA){data.settings.dispoA="07:00";data.settings.dispoB="15:06";data.settings.dispoP=30;}
 Object.keys(data.days).forEach(function(k){var x=data.days[k]; if(x.conge&&!x.type){x.type="conge"} delete x.conge;});
 
@@ -307,7 +303,6 @@ function segMin(s,live){
   var b=toMin(s.b);
   if(b==null){ if(!live) return 0; b=toMin(nowHM()); }
   var d=b-a; if(d<0) d+=1440;
-  if(s.t==="r" && s.b) d+= 2*data.settings.bonus;
   if(s.p && s.b) d-= s.p;
   return Math.max(0,d);
 }
@@ -412,7 +407,6 @@ function recapText(y,m){
   lines.push("Total compté : "+fmt(st.done));
   lines.push("Objectif du mois : "+fmt(st.obj)+" (38 h/sem.)".replace("38",(data.settings.weekMin/60).toString().replace(".",",")));
   lines.push("Solde : "+fmt(st.done-st.obj,true));
-  lines.push("(Rappels : "+data.settings.bonus+" min avant et après inclus)");
   return lines.join("\n");
 }
 var rCur=new Date(mCur);
@@ -423,7 +417,6 @@ function renderRecap(){
 }
 function renderReg(){
   $("sWeek").value=(data.settings.weekMin/60);
-  $("sBonus").value=data.settings.bonus;
   $("sDA").value=data.settings.dispoA; $("sDB").value=data.settings.dispoB; $("sDP").value=data.settings.dispoP;
   $("sDNote").textContent="Compte "+fmt(segMin({t:"d",a:data.settings.dispoA,b:data.settings.dispoB,p:data.settings.dispoP}))+" par jour de dispo gradé.";
   $("sDayNote").textContent="Soit "+fmt(dayNorm())+" par jour ouvrable (lundi à vendredi).";
@@ -504,11 +497,10 @@ function copy(text,msg){
 }
 $("rCopy").onclick=function(){copy($("rText").value,"Récap copié")};
 $("sWeek").onchange=function(){var v=parseFloat(this.value);if(v>0){data.settings.weekMin=Math.round(v*60);save();render()}};
-$("sBonus").onchange=function(){var v=parseInt(this.value,10);if(v>=0){data.settings.bonus=v;save();render()}};
 $("bkCopy").onclick=function(){copy(JSON.stringify(data),"Sauvegarde copiée")};
 $("bkShow").onclick=function(){$("bkBox").classList.toggle("hidden")};
 $("bkLoad").onclick=function(){
-  try{var d=JSON.parse($("bkText").value); if(!d.days) throw 0; data=d; if(!data.settings)data.settings={weekMin:2280,bonus:30}; save(); render(); toast("Sauvegarde restaurée"); $("bkBox").classList.add("hidden")}
+  try{var d=JSON.parse($("bkText").value); if(!d.days) throw 0; data=d; if(!data.settings)data.settings={weekMin:2280}; save(); render(); toast("Sauvegarde restaurée"); $("bkBox").classList.add("hidden")}
   catch(e){toast("Sauvegarde illisible")}
 };
 function updateLive(){
