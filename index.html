@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mes heures">
+<title>Mes heures</title>
+<style>
+:root{
+  --bg:#f6f1e9; --card:#fffdf9; --ink:#2b2230; --muted:#7a6f7f; --line:#e7dfd3;
+  --accent:#6b3f7a; --accent2:#8e5aa0; --pos:#2f7d4f; --neg:#b4452f; --warn:#b7791f;
+  --r:16px;
+  /* couleurs des jours (d'après le tableau du service) */
+  --c-dispo:#5f5f66;  --c-dispo-bg:#e2e2e6;   /* gris */
+  --c-ops:#8a6d00;    --c-ops-bg:#fbf1bf;     /* jaune pâle */
+  --c-conge:#ffffff;  --c-conge-bg:#2f5fb3;   /* bleu prononcé */
+  --c-sam:#3f78a8;    --c-sam-bg:#dcebf8;     /* bleu pâle */
+  --c-fer:#9b3f8f;    --c-fer-bg:#f3d6ee;     /* mauve (dimanche et férié) */
+  --c-ex:#ffffff;     --c-ex-bg:#d0342c;      /* rouge */
+  --c-z:#2c7363;      --c-z-bg:#d6efe8;       /* vert d'eau */
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom))}
+header{padding:16px 18px 6px}
+h1{font-size:22px;margin:0}
+.sub{color:var(--muted);font-size:14px}
+main{padding:8px 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.big{font-size:34px;font-weight:700;letter-spacing:-.5px}
+.mid{font-size:20px;font-weight:600}
+.small{font-size:13px;color:var(--muted)}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+button{font:inherit;border:0;border-radius:12px;padding:12px 14px;cursor:pointer}
+.btn{background:linear-gradient(180deg,var(--accent2),var(--accent));color:#fff;font-weight:600;box-shadow:0 2px 6px rgba(107,63,122,.3)}
+.btn.alt{background:#efe6f2;color:var(--accent);box-shadow:none}
+.btn.ghost{background:transparent;color:var(--accent);padding:8px}
+.btn.sm{padding:7px 10px;font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.navd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.navd button{background:#efe6f2;color:var(--accent);width:44px;padding:10px 0;font-size:18px}
+.seg{display:flex;align-items:center;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.seg:first-child{border-top:0}
+.tag{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;background:#efe6f2;color:var(--accent);white-space:nowrap}
+.tag.r{background:#fbefd9;color:#8a6212}
+.tag.g{background:#e3efe7;color:var(--pos)}
+.tag.d{background:var(--c-dispo-bg);color:var(--c-dispo)}
+.tag.o{background:var(--c-ops-bg);color:var(--c-ops)}
+.tag.plus{background:var(--c-fer);color:#fff}
+input[type=time],input[type=date],input[type=text]{font:inherit;border:1px solid var(--line);border-radius:10px;padding:6px 6px;background:#fff;color:var(--ink);min-width:0;width:100%}
+input[type=number]{font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px;width:90px;background:#fff;color:var(--ink)}
+select{font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff;color:var(--ink)}
+.seg .dur{min-width:58px;text-align:right;font-weight:600}
+.x{background:transparent;color:var(--muted);padding:6px 8px;font-size:18px}
+.toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.toggle:first-child{border-top:0}
+.sw{width:50px;height:30px;border-radius:999px;background:#ddd3e0;position:relative;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on{background:var(--accent)} .sw.on::after{left:23px}
+.bar{height:10px;border-radius:999px;background:#ece4ee;overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:999px}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(255,253,249,.96);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+nav button{flex:1;background:transparent;color:var(--muted);padding:8px 0;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button svg{width:22px;height:22px}
+nav button.on{color:var(--accent);font-weight:700}
+textarea{width:100%;min-height:140px;font:13px/1.4 ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:9;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.hidden{display:none!important}
+.note{font-size:13px;color:var(--muted);margin-top:6px}
+.live{font-size:13px;color:var(--pos);font-weight:600}
+.warnbox{background:#fdf0d8;border:1px solid #f0d49a;color:#7a4e0c;border-radius:12px;padding:10px 12px;font-size:14px;margin-top:10px}
+.info{background:var(--c-fer-bg);color:var(--c-fer);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;margin-top:10px}
+
+/* boutons de type */
+.types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.ty{background:var(--card);border:2px solid var(--line);color:var(--ink);font-weight:600;font-size:14px;padding:10px 4px}
+.ty.on{background:var(--kb);border-color:var(--kb);color:var(--k)}
+.ty.dispo.on,.ty.ops.on,.ty.z.on{border-color:var(--k)}
+.halfrow{display:flex;align-items:center;justify-content:space-between;margin:-4px 0 12px;padding:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+
+/* classes de couleur */
+.k-dispo{--k:var(--c-dispo);--kb:var(--c-dispo-bg)}
+.k-ops{--k:var(--c-ops);--kb:var(--c-ops-bg)}
+.k-conge{--k:var(--c-conge);--kb:var(--c-conge-bg)}
+.k-z{--k:var(--c-z);--kb:var(--c-z-bg)}
+.k-ex{--k:var(--c-ex);--kb:var(--c-ex-bg)}
+.k-fer,.k-dim{--k:var(--c-fer);--kb:var(--c-fer-bg)}
+.k-sam{--k:var(--c-sam);--kb:var(--c-sam-bg)}
+.daycard{border-left:6px solid var(--line)}
+.daycard[class*="k-"]{border-left-color:var(--k);background:linear-gradient(90deg,var(--kb),var(--card) 75%)}
+.daycard.k-conge,.daycard.k-ex{border-left-color:var(--kb)}
+.daycard.k-fw{border-left-color:var(--c-fer);background:linear-gradient(135deg,var(--c-fer-bg) 0 50%,var(--kb) 50% 100%)}
+
+.days .d{display:flex;align-items:center;gap:8px;padding:9px 8px;cursor:pointer;border-radius:8px;margin:3px 0;border-left:4px solid transparent;border-top:1px solid var(--line)}
+.days .d:first-child{border-top:0}
+.days .d[class*="k-"]{background:var(--kb);border-left-color:var(--k);border-top:0;color:var(--ink)}
+.days .d[class*="k-"]+.d{border-top:0}
+.days .d.k-conge,.days .d.k-ex{color:#fff;border-left-color:rgba(0,0,0,.25)}
+.days .d.k-conge .small,.days .d.k-ex .small,.days .d.k-conge .we,.days .d.k-ex .we{color:rgba(255,255,255,.85)}
+.days .d.k-fw{background:linear-gradient(135deg,var(--c-fer-bg) 0 50%,var(--kb) 50% 100%);border-left-color:var(--c-fer);color:var(--ink)}
+.days .dn{width:62px;font-weight:600;flex:none}
+.days .we{color:var(--muted)}
+.days .dh{margin-left:auto;font-weight:600;white-space:nowrap}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.legend span{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--kb);color:var(--k);font-weight:600}
+.legend .k-fw{background:linear-gradient(135deg,var(--c-fer-bg) 0 50%,var(--c-ops-bg) 50% 100%);color:var(--c-fer)}
+.pz{font-size:11px;color:var(--muted);white-space:nowrap}
+
+/* récap */
+.kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:15px}
+.kv:first-child{border-top:0}
+.kv b{white-space:nowrap}
+.per{border-top:1px solid var(--line);padding:10px 0}
+.per:first-child{border-top:0}
+.per h4{margin:0 0 4px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.per .ln{display:flex;justify-content:space-between;font-size:14px;padding:2px 0}
+.per .ed{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.per .ed label{font-size:12px;color:var(--muted)}
+.per .ed input{width:100%}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#efe6f2;color:var(--accent)}
+.chip.done{background:#e3efe7;color:var(--pos)}
+.cr{display:grid;grid-template-columns:1fr 64px 30px;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.cr:first-child{border-top:0}
+.cr input[type=number]{width:100%}
+.cr .u{grid-column:1 / span 2}
+.fe{display:grid;grid-template-columns:1fr 30px;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.fe:first-child{border-top:0}
+.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.totals .n{font-size:24px;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Mes heures</h1>
+  <div class="sub" id="subtitle"></div>
+</header>
+<main>
+  <!-- JOUR -->
+  <section id="v-jour">
+    <div class="navd">
+      <button id="dPrev" aria-label="Jour précédent">‹</button>
+      <div style="text-align:center"><div class="mid" id="dLabel"></div><div class="small" id="dKind"></div></div>
+      <button id="dNext" aria-label="Jour suivant">›</button>
+    </div>
+    <div class="types" id="types">
+      <button data-type="dispo" class="ty dispo k-dispo">Dispo gradé</button>
+      <button data-type="ops" class="ty ops k-ops">Opération</button>
+      <button data-type="conge" class="ty conge k-conge">Congé</button>
+      <button data-type="z" class="ty z k-z">Z (repos)</button>
+      <button data-type="ex" class="ty ex k-ex">EX (exempt)</button>
+    </div>
+    <div class="halfrow hidden" id="halfRow"><span id="halfLab">Demi-journée</span><div class="sw" id="tHalf"></div></div>
+    <div class="card daycard" id="dayCard">
+      <div class="row between">
+        <div><div class="small">Compté ce jour</div><div class="big" id="dTotal">0 h 00</div></div>
+        <div style="text-align:right"><div class="small">Norme du jour</div><div class="mid" id="dNorm"></div></div>
+      </div>
+      <div class="live hidden" id="dLive"></div>
+      <div class="small" id="dExplain" style="margin-top:6px"></div>
+      <div class="info hidden" id="dFw"></div>
+    </div>
+    <div class="grid2" style="margin-bottom:12px">
+      <button class="btn" id="bStart">Début</button>
+      <button class="btn alt" id="bEnd">Fin</button>
+    </div>
+    <div class="card">
+      <div class="row between" style="margin-bottom:4px">
+        <strong>Prestations</strong>
+        <div class="row">
+          <button class="btn ghost" id="addS">+ Service</button>
+          <button class="btn ghost" id="addR">+ Rappel</button>
+        </div>
+      </div>
+      <div id="segs"></div>
+      <div class="note">Une fin plus tôt que le début compte comme le lendemain (service de nuit).</div>
+    </div>
+    <div class="card">
+      <div class="toggle"><span>Rôle de garde (R)</span><div class="sw" id="tGarde"></div></div>
+    </div>
+  </section>
+
+  <!-- MOIS -->
+  <section id="v-mois" class="hidden">
+    <div class="navd">
+      <button id="mPrev" aria-label="Mois précédent">‹</button>
+      <div class="mid" id="mLabel"></div>
+      <button id="mNext" aria-label="Mois suivant">›</button>
+    </div>
+    <div class="card">
+      <div class="small">Solde du mois</div>
+      <div class="big" id="mSolde"></div>
+      <div class="small" id="mSoldeTxt"></div>
+      <div class="bar"><i id="mBar" style="width:0"></i></div>
+      <div class="grid3" style="margin-top:12px">
+        <div><div class="small">Compté</div><div class="mid" id="mDone"></div></div>
+        <div><div class="small">Objectif</div><div class="mid" id="mObj"></div></div>
+        <div><div class="small">À ce jour</div><div class="mid" id="mToDate"></div></div>
+      </div>
+      <div class="kv" style="margin-top:10px;border-top:1px solid var(--line)"><span>Heures sup (période en cours)</span><b id="mHS"></b></div>
+    </div>
+    <div class="legend">
+      <span class="k-dispo">Dispo gradé</span><span class="k-ops">Opération</span><span class="k-conge">Congé</span><span class="k-z">Z</span><span class="k-ex">EX</span><span class="k-sam">Samedi</span><span class="k-dim">Dimanche / férié</span><span class="k-fw">Férié travaillé</span>
+    </div>
+    <div class="card days" id="mDays"></div>
+    <div class="card">
+      <strong>Totaux du mois</strong>
+      <div class="totals" style="margin-top:10px">
+        <div><div class="n" id="tOps">0</div><div class="small">Opérations</div></div>
+        <div><div class="n" id="tDispo">0</div><div class="small">Dispo gradés</div></div>
+        <div><div class="n" id="tRap">0</div><div class="small">Rappels</div></div>
+      </div>
+      <div class="small" id="tOther" style="margin-top:10px;text-align:center"></div>
+    </div>
+  </section>
+
+  <!-- RECAP -->
+  <section id="v-recap" class="hidden">
+    <div class="navd">
+      <button id="yPrev" aria-label="Année précédente">‹</button>
+      <div class="mid" id="yLabel"></div>
+      <button id="yNext" aria-label="Année suivante">›</button>
+    </div>
+
+    <div class="card" id="cConge"></div>
+    <div class="card" id="cHS"></div>
+  </section>
+
+  <!-- REGLAGES -->
+  <section id="v-reg" class="hidden">
+    <div class="card">
+      <strong>Régime horaire</strong>
+      <div class="row between" style="margin-top:10px">
+        <span>Heures par semaine</span>
+        <input type="number" id="sWeek" step="0.5" min="1" max="60">
+      </div>
+      <div class="note" id="sDayNote"></div>
+    </div>
+    <div class="card">
+      <strong>Horaire « Dispo gradé »</strong>
+      <div class="grid3" style="margin-top:10px">
+        <div><div class="small">Début</div><input type="time" id="sDA"></div>
+        <div><div class="small">Fin</div><input type="time" id="sDB"></div>
+        <div><div class="small">Pause (min)</div><input type="number" id="sDP" step="5" min="0" max="120" style="width:100%"></div>
+      </div>
+      <div class="note" id="sDNote"></div>
+    </div>
+    <div class="card">
+      <strong>Rappels</strong>
+      <div class="row between" style="margin-top:10px">
+        <span>Temps accordé avant et après</span>
+        <select id="sPad"><option value="0">Aucun</option><option value="30">30 min</option><option value="60">1 h</option></select>
+      </div>
+      <div class="note">Selon le domicile. Ce temps est ajouté avant ET après chaque rappel.</div>
+    </div>
+    <div class="card">
+      <strong>Heures sup : point de départ</strong>
+      <div class="grid2" style="margin-top:10px">
+        <div><div class="small">Suivi depuis le</div><input type="date" id="sTS"></div>
+        <div><div class="small">Solde à cette date (h:mm)</div><input type="text" id="sHS" inputmode="text" placeholder="22:03"></div>
+      </div>
+      <div class="note">Les jours avant cette date ne sont pas comptés. Les congés pris avant se notent dans le Récap (« déjà consommé avant l'app »).</div>
+    </div>
+    <div class="card">
+      <strong>Jours fériés du service</strong>
+      <p class="small" style="margin:6px 0 8px">En plus des 10 fériés légaux belges (calculés automatiquement). Ajoute ici les ponts et congés prévus au calendrier de la police.</p>
+      <div id="feList"></div>
+      <div class="grid2" style="margin-top:10px">
+        <input type="date" id="feD">
+        <input type="text" id="feN" placeholder="Nom (ex. Pont)">
+      </div>
+      <div class="row between" style="margin-top:8px">
+        <span class="small">Chaque année</span><div class="sw" id="feRec"></div>
+      </div>
+      <button class="btn alt" id="feAdd" style="width:100%;margin-top:8px">Ajouter ce jour</button>
+    </div>
+    <div class="card">
+      <strong>Sauvegarde</strong>
+      <p class="small" style="margin:6px 0 10px">Tes données restent sur ce téléphone, dans ce navigateur. Copie régulièrement la sauvegarde et garde-la en lieu sûr.</p>
+      <div class="grid2">
+        <button class="btn alt" id="bkCopy">Copier la sauvegarde</button>
+        <button class="btn alt" id="bkShow">Restaurer…</button>
+      </div>
+      <div id="bkBox" class="hidden" style="margin-top:10px">
+        <textarea id="bkText" placeholder="Colle ici une sauvegarde"></textarea>
+        <button class="btn" id="bkLoad" style="width:100%;margin-top:8px">Restaurer cette sauvegarde</button>
+      </div>
+    </div>
+    <div class="card small">Version 0.4 · aucune donnée envoyée · rien d'autre que des horaires.</div>
+  </section>
+</main>
+
+<nav>
+  <button data-v="jour" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Jour</button>
+  <button data-v="mois"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Mois</button>
+  <button data-v="recap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Récap</button>
+  <button data-v="reg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Réglages</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var KEY="mesheures.v1";
+var mem=null;
+function load(){
+  try{var s=localStorage.getItem(KEY); if(s) return JSON.parse(s);}catch(e){}
+  return mem||{days:{},settings:{weekMin:2280}};
+}
+function save(){
+  mem=data; psMemo={};
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+}
+var data=load();
+
+/* ---------- migration / valeurs de départ ---------- */
+function migrate(){
+  if(!data.days) data.days={};
+  if(!data.settings) data.settings={weekMin:2280};
+  var S=data.settings;
+  delete S.bonus;
+  if(!S.dispoA){S.dispoA="07:00";S.dispoB="15:06";S.dispoP=30;}
+  if(S.rappelPad==null) S.rappelPad=0;
+  Object.keys(data.days).forEach(function(k){var x=data.days[k]; if(x.conge&&!x.type){x.type="conge"} delete x.conge;});
+  if(!data.track) data.track={start:"2026-11-24",hs:22*60+3};
+  if(!data.periods) data.periods={};
+  if(!data.extraFer) data.extraFer=[
+    {d:"11-02",n:"Jour des défunts"},
+    {d:"11-15",n:"Fête du Roi"},
+    {d:"12-26",n:"Lendemain de Noël"}
+  ];
+  if(!data.years) data.years={
+    "2026":{before:38.5,credits:[
+      {l:"Report congé année précédente",j:7,u:"2026-05-31"},
+      {l:"Congé supplémentaire (lundi de Pentecôte travaillé)",j:1,u:"2026-12-31"},
+      {l:"Jours CG",j:2,u:"2026-12-31"},
+      {l:"Fériés au choix (15/11 et 26/12)",j:2,u:"2026-12-31"},
+      {l:"Congé annuel de vacances",j:36,u:"2026-12-31"}
+    ]}
+  };
+}
+migrate();
+
+var $=function(id){return document.getElementById(id)};
+var JOURS=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+var JC=["dim","lun","mar","mer","jeu","ven","sam"];
+var MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+var MC=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+var PERN=["Janvier – février","Mars – avril","Mai – juin","Juillet – août","Septembre – octobre","Novembre – décembre"];
+
+function pad(n){return (n<10?"0":"")+n}
+function cap(s){return s.replace(/^./,function(c){return c.toUpperCase()})}
+function key(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function parseKey(k){var p=k.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+function today(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
+function nowHM(){var d=new Date();return pad(d.getHours())+":"+pad(d.getMinutes())}
+function toMin(hm){if(!hm)return null;var p=hm.split(":");return (+p[0])*60+(+p[1])}
+function fmt(min,signed){
+  var neg=min<0; var m=Math.round(Math.abs(min));
+  var s=Math.floor(m/60)+" h "+pad(m%60);
+  if(signed) return (neg?"− ":(m?"+ ":""))+s;
+  return (neg?"− ":"")+s;
+}
+function fmtHM(min){var neg=min<0,m=Math.round(Math.abs(min));return (neg?"-":"")+Math.floor(m/60)+":"+pad(m%60)}
+function parseHM(s){
+  if(s==null) return null; s=String(s).trim().replace(/\s/g,"").replace("−","-"); if(!s) return 0;
+  var neg=s.charAt(0)==="-"; if(neg) s=s.slice(1);
+  var v;
+  if(/[:h]/i.test(s)){var p=s.split(/[:h]/i); v=(parseInt(p[0]||"0",10))*60+(parseInt(p[1]||"0",10));}
+  else v=Math.round(parseFloat(s.replace(",","."))*60);
+  if(isNaN(v)) return null;
+  return neg?-v:v;
+}
+function NORM(){return Math.round(data.settings.weekMin/5)}
+/* jours de congé au format GALoP : 9 j 03:48 */
+function fmtJ(days){
+  var neg=days<0, a=Math.abs(days), w=Math.floor(a+1e-9), rest=Math.round((a-w)*NORM());
+  var s=w+" j"+(rest?" "+pad(Math.floor(rest/60))+":"+pad(rest%60):"");
+  return (neg?"− ":"")+s;
+}
+function num(j){return (Math.round(j*100)/100).toString().replace(".",",")}
+
+/* ---------- jours fériés ---------- */
+var ferCache={};
+function easter(y){
+  var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+  h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+  mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;
+  return new Date(y,mo-1,da);
+}
+function feries(y){
+  if(ferCache[y]) return ferCache[y];
+  var E=easter(y), r={};
+  function add(d,n){r[key(d)]=n}
+  function off(n){var d=new Date(E);d.setDate(d.getDate()+n);return d}
+  add(new Date(y,0,1),"Nouvel An");
+  add(off(1),"Lundi de Pâques");
+  add(new Date(y,4,1),"Fête du Travail");
+  add(off(39),"Ascension");
+  add(off(50),"Lundi de Pentecôte");
+  add(new Date(y,6,21),"Fête nationale");
+  add(new Date(y,7,15),"Assomption");
+  add(new Date(y,10,1),"Toussaint");
+  add(new Date(y,10,11),"Armistice");
+  add(new Date(y,11,25),"Noël");
+  return ferCache[y]=r;
+}
+function ferie(d){
+  var k=key(d), f=feries(d.getFullYear())[k]; if(f) return f;
+  var md=k.slice(5);
+  for(var i=0;i<data.extraFer.length;i++){var e=data.extraFer[i]; if(e.d===k||e.d===md) return e.n||"Férié du service";}
+  return null;
+}
+function isWeekday(d){var w=d.getDay();return w>=1&&w<=5}
+
+/* ---------- jour ---------- */
+function day(k,create){
+  var x=data.days[k];
+  if(!x&&create){x=data.days[k]={segs:[],garde:false,type:null}}
+  return x||{segs:[],garde:false,type:null};
+}
+function segMin(s,live){
+  var a=toMin(s.a); if(a==null) return 0;
+  var b=toMin(s.b);
+  if(b==null){ if(!live) return 0; b=toMin(nowHM()); }
+  var d=b-a; if(d<0) d+=1440;
+  if(s.p && s.b) d-= s.p;
+  if(s.t==="r" && s.b) d+=2*(data.settings.rappelPad||0);
+  return Math.max(0,d);
+}
+function worked(k,live){var x=day(k),t=0; x.segs.forEach(function(s){t+=segMin(s,live&&k===key(today()))}); return t;}
+function hasContent(x){return !!(x.type||x.segs.some(function(s){return s.a}))}
+function isHalf(x){return !!x.half&&(x.type==="conge"||x.type==="z")}
+/* férié (lun.–ven.) où il a presté : +1 jour de congé, heures en heures sup */
+function workedFerie(d,x){
+  if(!isWeekday(d)||!ferie(d)) return false;
+  return x.type==="dispo"||x.type==="ops"||x.segs.some(function(s){return s.a&&s.b});
+}
+function credit(k,live){
+  var d=parseKey(k), x=day(k), w=worked(k,live);
+  if(!isWeekday(d)) return w;
+  if(ferie(d)) return w+NORM();
+  if(x.type==="conge") return w+(isHalf(x)?NORM()/2:NORM());
+  if(x.type==="ex") return w+NORM();
+  return w; /* Z : rien n'est crédité, les 7 h 36 sortent des heures sup */
+}
+function congeUsed(d,x){
+  if(x.type!=="conge"||!isWeekday(d)||ferie(d)) return 0;
+  return isHalf(x)?0.5:1;
+}
+/* un jour compte dans le solde s'il est passé, ou aujourd'hui s'il est encodé */
+function counted(k){var tk=key(today()); return k<tk||(k===tk&&hasContent(day(k)))}
+function tracked(k){return k>=data.track.start}
+
+function kcls(d,x){
+  var t=x.type;
+  if(workedFerie(d,x)) return "k-fw k-"+(t==="dispo"?"dispo":"ops");
+  if(t) return "k-"+t;
+  if(ferie(d)) return "k-fer";
+  if(d.getDay()===6) return "k-sam";
+  if(d.getDay()===0) return "k-dim";
+  return "";
+}
+var TLAB={s:"Service",r:"Rappel",d:"Dispo"};
+var TYN={dispo:"Dispo",ops:"Ops",conge:"Congé",z:"Z",ex:"EX"};
+
+/* ---------- mois ---------- */
+function monthStats(y,m){
+  var n=new Date(y,m+1,0).getDate(), obj=0, done=0, objToDate=0, doneToDate=0;
+  var c={ops:0,dispo:0,rap:0,conge:0,z:0,ex:0,fw:0};
+  for(var i=1;i<=n;i++){
+    var d=new Date(y,m,i), k=key(d), x=day(k);
+    if(x.type==="ops") c.ops++;
+    if(x.type==="dispo") c.dispo++;
+    c.rap+=x.segs.filter(function(s){return s.t==="r"&&s.a}).length;
+    c.conge+=congeUsed(d,x);
+    if(x.type==="z"&&isWeekday(d)) c.z+=isHalf(x)?0.5:1;
+    if(x.type==="ex") c.ex++;
+    if(workedFerie(d,x)) c.fw++;
+    if(!tracked(k)) continue;
+    var cr=credit(k,true);
+    if(isWeekday(d)) obj+=NORM();
+    done+=cr;
+    if(counted(k)){ doneToDate+=cr; if(isWeekday(d)) objToDate+=NORM(); }
+  }
+  return {obj:obj,done:done,objToDate:objToDate,doneToDate:doneToDate,n:n,c:c};
+}
+
+/* ---------- heures sup par période de 2 mois ---------- */
+var psMemo={};
+function pState(y,p){
+  var id=y+"-"+p; if(psMemo[id]) return psMemo[id];
+  var start=new Date(y,2*p,1), end=new Date(y,2*p+2,0), ts=parseKey(data.track.start), t=today();
+  var r={y:y,p:p,id:id,start:start,end:end,cur:(t>=start&&t<=end),fut:start>t,closed:end<t};
+  if(end<ts){r.tracked=false; return psMemo[id]=r}
+  r.tracked=true;
+  if(ts>=start) r.inBal=data.track.hs;
+  else { var pp=p?pState(y,p-1):pState(y-1,5); r.inBal=pp.out; }
+  var delta=0, d=new Date(Math.max(start.getTime(),ts.getTime())), lim=end<t?end:t;
+  while(d<=lim){var k=key(d); if(counted(k)) delta+=credit(k,true)-(isWeekday(d)?NORM():0); d.setDate(d.getDate()+1);}
+  var pe=data.periods[id]||{};
+  r.delta=delta; r.paid=pe.paid||0; r.conv=pe.conv||0;
+  r.out=r.inBal+delta-r.paid-r.conv*NORM();
+  return psMemo[id]=r;
+}
+function hsNow(){var t=today(); return pState(t.getFullYear(),Math.floor(t.getMonth()/2)).out}
+
+/* ---------- congés par année ---------- */
+function congeStats(Y){
+  var yd=data.years[Y]; if(!yd) return null;
+  var base=0; yd.credits.forEach(function(c){base+=(+c.j||0)});
+  var used=+yd.before||0, list=[], fer=[];
+  Object.keys(data.days).sort().forEach(function(k){
+    if(k.slice(0,4)!==String(Y)||!tracked(k)) return;
+    var d=parseKey(k), x=data.days[k], u=congeUsed(d,x);
+    if(u){used+=u; list.push([k,u]);}
+    if(workedFerie(d,x)&&counted(k)) fer.push(k);
+  });
+  var conv=0; for(var p=0;p<6;p++) conv+=((data.periods[Y+"-"+p]||{}).conv||0);
+  var total=base+fer.length+conv;
+  return {base:base,fer:fer,conv:conv,total:total,used:used,rest:total-used,list:list,before:+yd.before||0};
+}
+
+/* ---------- état ---------- */
+var cur=today();
+var mCur=new Date(cur.getFullYear(),cur.getMonth(),1);
+var rYear=cur.getFullYear();
+var view="jour";
+var editCredits=false;
+
+function toast(t,ms){var e=$("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(function(){e.classList.remove("show")},ms||1800)}
+function warnHS(){var h=hsNow(); if(h< -600) toast("Attention : heures sup à "+fmt(h,true),3500)}
+
+/* ---------- rendu JOUR ---------- */
+function renderJour(){
+  var k=key(cur), x=day(k), f=ferie(cur), wd=isWeekday(cur);
+  var isToday=k===key(today());
+  $("dLabel").textContent=(isToday?"Aujourd'hui":cap(JOURS[cur.getDay()]))+" "+cur.getDate()+" "+MOIS[cur.getMonth()];
+  var kinds=[];
+  if(!isToday) kinds.push(cur.getFullYear());
+  if(f) kinds.push("Férié : "+f);
+  if(!wd) kinds.push("Week-end");
+  $("dKind").textContent=kinds.join(" · ");
+  $("dNorm").textContent=wd?fmt(NORM()):"—";
+  $("dayCard").className="card daycard "+kcls(cur,x);
+  document.querySelectorAll("#types .ty").forEach(function(b){b.classList.toggle("on",x.type===b.dataset.type)});
+  var showHalf=x.type==="conge"||x.type==="z";
+  $("halfRow").classList.toggle("hidden",!showHalf);
+  $("halfLab").textContent=x.type==="z"?"Demi-journée de Z (3 h 48)":"Demi-journée de congé (3 h 48)";
+  $("tHalf").classList.toggle("on",isHalf(x));
+  $("dTotal").textContent=fmt(credit(k,true));
+  var ex="";
+  if(wd&&!f){
+    if(x.type==="z") ex=(isHalf(x)?"3 h 48":"7 h 36")+" retirées des heures sup.";
+    if(x.type==="conge") ex=(isHalf(x)?"½ jour":"1 jour")+" retiré du quota de congés.";
+    if(x.type==="ex") ex="Exempt : compte 7 h 36.";
+  }
+  if(!tracked(k)) ex="Avant le début du suivi : ce jour n'est pas compté.";
+  $("dExplain").textContent=ex;
+  var fw=workedFerie(cur,x);
+  $("dFw").classList.toggle("hidden",!fw);
+  if(fw) $("dFw").textContent="Férié travaillé : +1 jour de congé, et les heures prestées vont en heures sup.";
+  var open=x.segs.filter(function(s){return s.a&&!s.b});
+  var live=$("dLive");
+  if(isToday&&open.length){live.classList.remove("hidden");live.textContent="En cours depuis "+open[open.length-1].a}
+  else live.classList.add("hidden");
+  var box=$("segs"); box.innerHTML="";
+  if(!x.segs.length){box.innerHTML='<div class="small" style="padding:8px 0">Rien d\'encodé. Appuie sur « Début » quand tu commences.</div>'}
+  var padR=data.settings.rappelPad||0;
+  x.segs.forEach(function(s,i){
+    var row=document.createElement("div"); row.className="seg";
+    var sub=s.p?'<br><span class="pz">−'+s.p+' min</span>':(s.t==="r"&&padR?'<br><span class="pz">+'+(2*padR)+' min</span>':'');
+    row.innerHTML='<span class="tag '+(s.t==="r"?"r":s.t==="d"?"d":(x.type==="ops"?"o":""))+'">'+(s.t==="s"&&x.type==="ops"?"Ops":TLAB[s.t])+sub+'</span>'+
+      '<input type="time" value="'+(s.a||"")+'" data-i="'+i+'" data-f="a" aria-label="Début">'+
+      '<span class="small">→</span>'+
+      '<input type="time" value="'+(s.b||"")+'" data-i="'+i+'" data-f="b" aria-label="Fin">'+
+      '<span class="dur" id="dur'+i+'">'+(s.b?fmt(segMin(s)):"…")+'</span>'+
+      '<button class="x" data-del="'+i+'" aria-label="Supprimer">×</button>';
+    box.appendChild(row);
+  });
+  $("tGarde").classList.toggle("on",!!x.garde);
+}
+
+/* ---------- rendu MOIS ---------- */
+function renderMois(){
+  var y=mCur.getFullYear(), m=mCur.getMonth(), st=monthStats(y,m);
+  $("mLabel").textContent=cap(MOIS[m])+" "+y;
+  var t=today(), isCur=(y===t.getFullYear()&&m===t.getMonth()), fut=new Date(y,m,1)>t;
+  var solde=st.doneToDate-st.objToDate;
+  var e=$("mSolde"); e.textContent=fut?"—":fmt(solde,true);
+  e.className="big "+(fut?"":solde>0?"pos":solde<0?"neg":"");
+  $("mSoldeTxt").textContent=isCur?"par rapport à l'objectif à ce jour":(fut?"mois à venir":"mois terminé");
+  $("mDone").textContent=fmt(st.done);
+  $("mObj").textContent=fmt(st.obj);
+  $("mToDate").textContent=isCur?fmt(st.objToDate):"—";
+  $("mBar").style.width=Math.min(100,st.obj?st.done/st.obj*100:0)+"%";
+  var h=hsNow(), hs=$("mHS"); hs.textContent=fmt(h,true); hs.className=h< -600?"neg":(h>0?"pos":"");
+  var box=$("mDays"); box.innerHTML="";
+  for(var i=1;i<=st.n;i++){
+    var d=new Date(y,m,i), k=key(d), x=day(k), c=credit(k,true), f=ferie(d);
+    var tags="";
+    if(workedFerie(d,x)) tags+='<span class="tag plus">+1 j</span>';
+    if(x.garde) tags+='<span class="tag g">R</span>';
+    if(x.segs.some(function(s){return s.t==="r"&&s.a})) tags+='<span class="tag r">Rappel</span>';
+    var row=document.createElement("div"); row.className="d "+kcls(d,x); row.dataset.k=k;
+    var lab=x.type?(TYN[x.type]+(isHalf(x)?" ½":"")):(f||"");
+    if(x.type&&f) lab+=" · "+f;
+    row.innerHTML='<span class="dn '+(isWeekday(d)?"":"we")+'">'+JC[d.getDay()]+" "+i+'</span>'+(lab?'<span class="small">'+lab+'</span>':'')+tags+'<span class="dh '+(c?"":"small")+'">'+(c?fmt(c):"—")+'</span>';
+    box.appendChild(row);
+  }
+  $("tOps").textContent=st.c.ops; $("tDispo").textContent=st.c.dispo; $("tRap").textContent=st.c.rap;
+  var o=[];
+  if(st.c.conge) o.push("Congés : "+num(st.c.conge)+" j");
+  if(st.c.z) o.push("Z : "+num(st.c.z)+" j");
+  if(st.c.ex) o.push("EX : "+st.c.ex+" j");
+  if(st.c.fw) o.push("Fériés travaillés : "+st.c.fw);
+  $("tOther").textContent=o.join(" · ");
+}
+
+/* ---------- rendu RECAP ---------- */
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function dShort(k){var d=parseKey(k);return JC[d.getDay()]+" "+d.getDate()+" "+MC[d.getMonth()]}
+function renderRecap(){
+  var Y=rYear; $("yLabel").textContent=Y;
+  /* congés */
+  var cc=$("cConge"), cs=congeStats(Y), h="";
+  if(!cs){
+    h='<strong>Congés '+Y+'</strong><p class="small">Pas encore de quota pour '+Y+'.</p>';
+    if(data.years[Y-1]) h+='<p class="small">Le solde restant de '+(Y-1)+' ('+fmtJ(congeStats(Y-1).rest)+') sera repris en « Report ». Tu ajusteras ensuite les crédits de '+Y+'.</p>';
+    h+='<button class="btn" id="yCreate" style="width:100%">Créer l\'année '+Y+'</button>';
+    cc.innerHTML=h;
+  } else {
+    h='<div class="row between"><strong>Congés '+Y+'</strong><button class="btn ghost sm" id="crEdit">'+(editCredits?"Terminé":"Modifier")+'</button></div>';
+    h+='<div class="small" style="margin-top:6px">Crédit restant</div><div class="big '+(cs.rest<0?"neg":"")+'">'+fmtJ(cs.rest)+'</div>';
+    h+='<div style="margin-top:8px">';
+    h+='<div class="kv"><span>Crédit attribué</span><b>'+fmtJ(cs.total)+'</b></div>';
+    if(cs.fer.length) h+='<div class="kv"><span>dont fériés travaillés</span><b>+ '+cs.fer.length+' j</b></div>';
+    if(cs.conv) h+='<div class="kv"><span>dont heures sup converties</span><b>+ '+cs.conv+' j</b></div>';
+    h+='<div class="kv"><span>Crédit consommé</span><b>'+fmtJ(cs.used)+'</b></div>';
+    h+='</div>';
+    if(!editCredits){
+      h+='<div class="small" style="margin:12px 0 4px">Crédits</div>';
+      data.years[Y].credits.forEach(function(c){h+='<div class="kv"><span>'+esc(c.l)+(c.u?'<br><span class="small">valable jusqu\'au '+esc(c.u.split("-").reverse().join("/"))+'</span>':'')+'</span><b>'+num(+c.j||0)+' j</b></div>'});
+      cs.fer.forEach(function(k){h+='<div class="kv"><span>A travaillé le '+dShort(k)+' ('+esc(ferie(parseKey(k)))+')</span><b>1 j</b></div>'});
+      for(var p=0;p<6;p++){var cv=(data.periods[Y+"-"+p]||{}).conv; if(cv) h+='<div class="kv"><span>Heures sup converties ('+PERN[p].toLowerCase()+')</span><b>'+cv+' j</b></div>'}
+      h+='<div class="small" style="margin:12px 0 4px">Consommation</div>';
+      if(cs.before) h+='<div class="kv"><span>Déjà consommé avant l\'app</span><b>'+fmtJ(cs.before)+'</b></div>';
+      cs.list.forEach(function(e){h+='<div class="kv"><span>'+dShort(e[0])+'</span><b>'+(e[1]===1?"1 j":"½ j")+'</b></div>'});
+      if(!cs.before&&!cs.list.length) h+='<div class="small">Aucun congé encodé.</div>';
+    } else {
+      h+='<div class="small" style="margin:12px 0 4px">Crédits (libellé, jours, valable jusqu\'au)</div><div id="crList">';
+      data.years[Y].credits.forEach(function(c,i){
+        h+='<div class="cr"><input type="text" data-ci="'+i+'" data-cf="l" value="'+esc(c.l)+'"><input type="number" step="0.5" data-ci="'+i+'" data-cf="j" value="'+(+c.j||0)+'"><button class="x" data-cdel="'+i+'">×</button>'+
+           '<input class="u" type="date" data-ci="'+i+'" data-cf="u" value="'+esc(c.u||"")+'"></div>';
+      });
+      h+='</div><button class="btn alt sm" id="crAdd" style="margin-top:8px">+ Ajouter un crédit</button>';
+      h+='<div class="row between" style="margin-top:12px"><span>Déjà consommé avant l\'app (jours)</span><input type="number" step="0.5" min="0" id="crBefore" value="'+cs.before+'"></div>';
+      h+='<div class="note">Une demi-journée = 0,5. Ce chiffre vient de ta fiche de contrôle, à la date du début du suivi.</div>';
+    }
+    cc.innerHTML=h;
+  }
+  /* heures sup */
+  var hc=$("cHS"), now=hsNow(), t=today();
+  h='<strong>Heures sup</strong>';
+  h+='<div class="small" style="margin-top:6px">Solde à ce jour</div><div class="big '+(now<0?"neg":now>0?"pos":"")+'">'+fmt(now,true)+'</div>';
+  if(now< -600) h+='<div class="warnbox">Attention : tu es à '+fmt(now,true)+' d\'heures sup (avertissement à partir de − 10 h).</div>';
+  h+='<div style="margin-top:10px">';
+  var any=false;
+  for(var p2=0;p2<6;p2++){
+    var s=pState(Y,p2);
+    if(!s.tracked||s.fut) continue;
+    any=true;
+    var gross=s.inBal+s.delta;
+    h+='<div class="per"><h4><span>'+PERN[p2]+'</span><span class="chip '+(s.closed?"done":"")+'">'+(s.cur?"en cours":"terminée")+'</span></h4>';
+    h+='<div class="ln"><span>Report reçu</span><b>'+fmt(s.inBal,true)+'</b></div>';
+    h+='<div class="ln"><span>Prestées dans la période</span><b>'+fmt(s.delta,true)+'</b></div>';
+    if(s.paid) h+='<div class="ln"><span>Payées</span><b>− '+fmt(s.paid)+'</b></div>';
+    if(s.conv) h+='<div class="ln"><span>Converties en congé ('+s.conv+' j)</span><b>− '+fmt(s.conv*NORM())+'</b></div>';
+    h+='<div class="ln"><span>'+(s.closed?"Reporté à la période suivante":"Solde")+'</span><b class="'+(s.out<0?"neg":"")+'">'+fmt(s.out,true)+'</b></div>';
+    h+='<div class="ed"><div><label>Payées (h:mm)</label><input type="text" data-pid="'+s.id+'" data-pf="paid" value="'+(s.paid?fmtHM(s.paid):"")+'" placeholder="0:00"></div>'+
+       '<div><label>Converties (jours)</label><input type="number" min="0" step="1" data-pid="'+s.id+'" data-pf="conv" value="'+(s.conv||"")+'" placeholder="0"></div></div>';
+    h+='<div class="row" style="margin-top:8px;gap:6px"><button class="btn alt sm" data-pall="'+s.id+'" data-v="'+Math.max(0,gross-s.conv*NORM())+'">Tout payer</button><button class="btn alt sm" data-prep="'+s.id+'">Tout reporter</button></div>';
+    h+='</div>';
+  }
+  if(!any) h+='<div class="small">Rien à afficher pour '+Y+' (suivi depuis le '+data.track.start.split("-").reverse().join("/")+').</div>';
+  h+='</div><div class="note">Périodes de 2 mois à partir de janvier. Ce qui n\'est ni payé ni converti passe automatiquement à la période suivante. 1 jour converti = '+fmt(NORM())+'.</div>';
+  hc.innerHTML=h;
+}
+
+/* ---------- rendu REGLAGES ---------- */
+function renderReg(){
+  var S=data.settings;
+  $("sWeek").value=(S.weekMin/60);
+  $("sDA").value=S.dispoA; $("sDB").value=S.dispoB; $("sDP").value=S.dispoP;
+  $("sDNote").textContent="Compte "+fmt(segMin({t:"d",a:S.dispoA,b:S.dispoB,p:S.dispoP}))+" par jour de dispo gradé.";
+  $("sDayNote").textContent="Soit "+fmt(NORM())+" par jour ouvrable (lundi à vendredi).";
+  $("sPad").value=String(S.rappelPad||0);
+  $("sTS").value=data.track.start; $("sHS").value=fmtHM(data.track.hs);
+  var fl=$("feList"), h="";
+  data.extraFer.forEach(function(e,i){
+    var lab=e.d.length===5?("chaque année le "+(+e.d.slice(3))+" "+MOIS[+e.d.slice(0,2)-1]):e.d.split("-").reverse().join("/");
+    h+='<div class="fe"><span><b>'+esc(e.n||"Férié")+'</b><br><span class="small">'+lab+'</span></span><button class="x" data-fdel="'+i+'">×</button></div>';
+  });
+  fl.innerHTML=h||'<div class="small">Aucun.</div>';
+}
+
+function render(){
+  psMemo={};
+  ["jour","mois","recap","reg"].forEach(function(v){$("v-"+v).classList.toggle("hidden",v!==view)});
+  document.querySelectorAll("nav button").forEach(function(b){b.classList.toggle("on",b.dataset.v===view)});
+  var t=today();
+  $("subtitle").textContent=JOURS[t.getDay()]+" "+t.getDate()+" "+MOIS[t.getMonth()]+" "+t.getFullYear();
+  if(view==="jour")renderJour();
+  if(view==="mois")renderMois();
+  if(view==="recap")renderRecap();
+  if(view==="reg")renderReg();
+}
+
+/* ---------- événements ---------- */
+document.querySelectorAll("nav button").forEach(function(b){b.onclick=function(){view=b.dataset.v;editCredits=false;render();window.scrollTo(0,0)}});
+$("dPrev").onclick=function(){cur.setDate(cur.getDate()-1);render()};
+$("dNext").onclick=function(){cur.setDate(cur.getDate()+1);render()};
+$("mPrev").onclick=function(){mCur.setMonth(mCur.getMonth()-1);render()};
+$("mNext").onclick=function(){mCur.setMonth(mCur.getMonth()+1);render()};
+$("yPrev").onclick=function(){rYear--;editCredits=false;render()};
+$("yNext").onclick=function(){rYear++;editCredits=false;render()};
+
+$("bStart").onclick=function(){
+  cur=today(); var x=day(key(cur),true);
+  if(x.segs.some(function(s){return s.a&&!s.b})){toast("Un service est déjà en cours");return}
+  var empty=x.segs.filter(function(s){return s.t!=="d"&&!s.a});
+  if(empty.length) empty[0].a=nowHM(); else x.segs.push({t:"s",a:nowHM(),b:null});
+  save(); render(); toast("Début noté à "+nowHM());
+};
+$("bEnd").onclick=function(){
+  cur=today(); var k=key(cur), x=day(k,true);
+  var open=x.segs.filter(function(s){return s.a&&!s.b});
+  if(!open.length){
+    var y=new Date(cur);y.setDate(y.getDate()-1);var xy=day(key(y));
+    var oy=xy.segs.filter(function(s){return s.a&&!s.b});
+    if(oy.length){oy[oy.length-1].b=nowHM();save();render();toast("Fin notée (service commencé hier)");return}
+    toast("Aucun service en cours");return;
+  }
+  open[open.length-1].b=nowHM(); save(); render(); toast("Fin notée à "+nowHM());
+};
+$("addS").onclick=function(){day(key(cur),true).segs.push({t:"s",a:"",b:""});save();render()};
+$("addR").onclick=function(){day(key(cur),true).segs.push({t:"r",a:"",b:""});save();render()};
+$("segs").addEventListener("change",function(e){
+  var t=e.target; if(t.tagName!=="INPUT")return;
+  var x=day(key(cur),true), s=x.segs[+t.dataset.i]; if(!s)return;
+  s[t.dataset.f]=t.value||null; save();
+  render();
+});
+$("segs").addEventListener("click",function(e){
+  var t=e.target.closest("[data-del]"); if(!t)return;
+  var i=+t.dataset.del, b=t;
+  if(b.dataset.armed){day(key(cur),true).segs.splice(i,1);save();render();toast("Supprimé");return}
+  b.dataset.armed="1"; b.textContent="Suppr. ?"; b.style.color="var(--neg)";
+  setTimeout(function(){if(b.isConnected){delete b.dataset.armed;b.textContent="×";b.style.color=""}},2500);
+});
+$("tGarde").onclick=function(){var x=day(key(cur),true);x.garde=!x.garde;save();render()};
+$("tHalf").onclick=function(){var x=day(key(cur),true);x.half=!x.half;save();render();if(x.type==="z")warnHS()};
+$("types").addEventListener("click",function(e){
+  var b=e.target.closest(".ty"); if(!b) return;
+  var x=day(key(cur),true), t=b.dataset.type, S=data.settings;
+  if(x.type===t){ x.type=null; x.half=false; if(t==="dispo") x.segs=x.segs.filter(function(s){return s.t!=="d"}); save(); render(); return; }
+  if(x.type==="dispo") x.segs=x.segs.filter(function(s){return s.t!=="d"});
+  x.type=t; if(t!=="conge"&&t!=="z") x.half=false;
+  if(t==="dispo"){ x.segs=x.segs.filter(function(s){return s.a}); x.segs.unshift({t:"d",a:S.dispoA,b:S.dispoB,p:S.dispoP}); toast("Dispo gradé : "+fmt(segMin(x.segs[0]))); }
+  if(t==="ops" && !x.segs.some(function(s){return s.t==="s"})){ x.segs.push({t:"s",a:"",b:""}); toast("Encode l'heure de début"); }
+  save(); render();
+  if(t==="z"){ var k=key(cur); if(counted(k)) warnHS(); else { var h=hsNow()-NORM(); if(h< -600) toast("Attention : après ce Z, heures sup à "+fmt(h,true),3500); } }
+});
+$("mDays").addEventListener("click",function(e){var r=e.target.closest(".d");if(!r)return;cur=parseKey(r.dataset.k);view="jour";render();window.scrollTo(0,0)});
+
+/* récap : congés */
+$("cConge").addEventListener("click",function(e){
+  var t=e.target;
+  if(t.id==="yCreate"){
+    var Y=rYear, prev=data.years[Y-1]?congeStats(Y-1).rest:0;
+    data.years[Y]={before:0,credits:[
+      {l:"Report congé année précédente",j:Math.max(0,Math.round(prev*2)/2),u:Y+"-05-31"},
+      {l:"Congé annuel de vacances",j:36,u:Y+"-12-31"}
+    ]};
+    editCredits=true; save(); render(); toast("Année "+Y+" créée : vérifie les crédits");
+    return;
+  }
+  if(t.id==="crEdit"){editCredits=!editCredits;render();return}
+  if(t.id==="crAdd"){data.years[rYear].credits.push({l:"Nouveau crédit",j:1,u:rYear+"-12-31"});save();render();return}
+  var del=t.closest("[data-cdel]");
+  if(del){
+    if(del.dataset.armed){data.years[rYear].credits.splice(+del.dataset.cdel,1);save();render();return}
+    del.dataset.armed="1";del.textContent="?";del.style.color="var(--neg)";
+    setTimeout(function(){if(del.isConnected){delete del.dataset.armed;del.textContent="×";del.style.color=""}},2500);
+  }
+});
+$("cConge").addEventListener("change",function(e){
+  var t=e.target, yd=data.years[rYear]; if(!yd) return;
+  if(t.id==="crBefore"){var v=parseFloat(String(t.value).replace(",","."));yd.before=isNaN(v)?0:v;save();render();return}
+  if(t.dataset.ci!=null){
+    var c=yd.credits[+t.dataset.ci]; if(!c) return;
+    if(t.dataset.cf==="j"){var j=parseFloat(String(t.value).replace(",","."));c.j=isNaN(j)?0:j}
+    else c[t.dataset.cf]=t.value;
+    save(); render();
+  }
+});
+/* récap : heures sup */
+$("cHS").addEventListener("change",function(e){
+  var t=e.target, id=t.dataset.pid; if(!id) return;
+  var pe=data.periods[id]||(data.periods[id]={});
+  if(t.dataset.pf==="paid"){var v=parseHM(t.value); if(v==null||v<0){toast("Format : 12:30");return} pe.paid=v}
+  if(t.dataset.pf==="conv"){var n=parseInt(t.value,10); pe.conv=isNaN(n)||n<0?0:n}
+  save(); render();
+  if(t.dataset.pf==="conv"&&pe.conv) toast(pe.conv+" j ajouté"+(pe.conv>1?"s":"")+" au quota de congés");
+  warnHS();
+});
+$("cHS").addEventListener("click",function(e){
+  var a=e.target.closest("[data-pall]"), r=e.target.closest("[data-prep]");
+  if(a){var pe=data.periods[a.dataset.pall]||(data.periods[a.dataset.pall]={}); pe.paid=Math.round(+a.dataset.v); save(); render(); toast("Tout payé : "+fmt(pe.paid))}
+  if(r){var pr=data.periods[r.dataset.prep]||(data.periods[r.dataset.prep]={}); pr.paid=0; pr.conv=0; save(); render(); toast("Tout est reporté")}
+});
+
+/* réglages */
+$("sDA").onchange=function(){if(this.value){data.settings.dispoA=this.value;save();render()}};
+$("sDB").onchange=function(){if(this.value){data.settings.dispoB=this.value;save();render()}};
+$("sDP").onchange=function(){var v=parseInt(this.value,10);if(v>=0){data.settings.dispoP=v;save();render()}};
+$("sWeek").onchange=function(){var v=parseFloat(this.value);if(v>0){data.settings.weekMin=Math.round(v*60);save();render()}};
+$("sPad").onchange=function(){data.settings.rappelPad=parseInt(this.value,10)||0;save();render();toast("Rappels : "+(data.settings.rappelPad?data.settings.rappelPad+" min avant et après":"sans temps de trajet"))};
+$("sTS").onchange=function(){if(this.value){data.track.start=this.value;save();render()}};
+$("sHS").onchange=function(){var v=parseHM(this.value);if(v==null){toast("Format : 22:03");return}data.track.hs=v;save();render();toast("Solde de départ : "+fmt(v,true))};
+$("feRec").onclick=function(){this.classList.toggle("on")};
+$("feAdd").onclick=function(){
+  var d=$("feD").value; if(!d){toast("Choisis une date");return}
+  var rec=$("feRec").classList.contains("on");
+  data.extraFer.push({d:rec?d.slice(5):d,n:$("feN").value.trim()||"Férié du service"});
+  $("feD").value="";$("feN").value="";$("feRec").classList.remove("on");
+  save(); render(); toast("Jour férié ajouté");
+};
+$("feList").addEventListener("click",function(e){
+  var b=e.target.closest("[data-fdel]"); if(!b) return;
+  if(b.dataset.armed){data.extraFer.splice(+b.dataset.fdel,1);save();render();return}
+  b.dataset.armed="1";b.textContent="?";b.style.color="var(--neg)";
+  setTimeout(function(){if(b.isConnected){delete b.dataset.armed;b.textContent="×";b.style.color=""}},2500);
+});
+
+function copy(text,msg){
+  function fallback(){var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast(msg)}catch(e){toast("Sélectionne le texte et copie-le")}ta.remove()}
+  try{navigator.clipboard.writeText(text).then(function(){toast(msg)},fallback)}catch(e){fallback()}
+}
+$("bkCopy").onclick=function(){copy(JSON.stringify(data),"Sauvegarde copiée")};
+$("bkShow").onclick=function(){$("bkBox").classList.toggle("hidden")};
+$("bkLoad").onclick=function(){
+  try{var d=JSON.parse($("bkText").value); if(!d.days) throw 0; data=d; migrate(); save(); render(); toast("Sauvegarde restaurée"); $("bkBox").classList.add("hidden")}
+  catch(e){toast("Sauvegarde illisible")}
+};
+function updateLive(){
+  if(view!=="jour") return;
+  var k=key(cur), x=day(k);
+  if(!x.segs.some(function(s){return s.a&&!s.b})) return;
+  $("dTotal").textContent=fmt(credit(k,true));
+}
+setInterval(updateLive,30000);
+render();
+
+/* exposé pour les tests */
+window.__mh={data:function(){return data},credit:credit,pState:pState,congeStats:congeStats,hsNow:hsNow,monthStats:monthStats,reset:function(d){data=d;migrate();psMemo={};render()},key:key};
+})();
+</script>
+</body>
+</html>
